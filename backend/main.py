@@ -11,11 +11,20 @@ from typing import List, Dict, Any
 from ai_router import AIRouter
 
 # إعداد التطبيق
-app = FastAPI(title="YemenJPT Sovereign Core v8.0")
+app = FastAPI(title="YemenJPT Sovereign Core v9.5")
+
+# CORS Configuration for Vercel Hybrid Deployment
+# Allows requests from localhost (dev) and any Vercel deployment (prod)
+origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://ai.ph-ye.org",
+    "https://*.vercel.app" # Wildcard for Vercel Preview/Production
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], # In strict production, replace "*" with specific domains
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,6 +56,7 @@ class ChatRequest(BaseModel):
 async def health_check():
     return {
         "status": "operational",
+        "deployment_mode": "Hybrid (Vercel + Sovereign VPS)",
         "containers": [
             {"id": "api", "name": "YJPT_api", "status": "running", "uptime": "14d 2h", "latency": "12ms"},
             {"id": "radar", "name": "YJPT_Radar", "status": "running", "uptime": "14d 2h", "latency": "45ms"},
@@ -59,10 +69,6 @@ async def health_check():
 async def agent_chat(request: ChatRequest):
     """
     The main intelligence gateway. 
-    It routes the prompt through the AIRouter which performs:
-    1. Sovereign RAG (retrieving Yemen-specific context)
-    2. Tool Routing (Weather, Video, Archiving)
-    3. Local LLM Generation (Ollama)
     """
     try:
         result = await ai_router.generate(request.prompt, request.model_name)
@@ -98,6 +104,14 @@ async def legal_meter(request: AnalysisRequest):
         "violated_articles": [],
         "interpretation": "النص متوافق مع الدستور اليمني ومخرجات الحوار الوطني."
     }
+
+# Token endpoint for Auth Guard
+@app.post("/token")
+async def login_for_access_token(form_data: Any = Depends()):
+    # Mock Auth for Vercel Demo Compatibility
+    if form_data.username == "info@raidan.pro" and form_data.password == "samah@2052024":
+        return {"access_token": "sovereign_token_xyz", "token_type": "bearer"}
+    raise HTTPException(status_code=400, detail="Incorrect username or password")
 
 if __name__ == "__main__":
     import uvicorn

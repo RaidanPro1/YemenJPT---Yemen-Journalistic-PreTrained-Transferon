@@ -1,91 +1,71 @@
 
 # YemenJPT Sovereign Intelligence Platform
-**Version:** 9.4 (Stable Architecture)
-**Target:** Ubuntu 24.04 LTS
+**Version:** 9.5 (Hybrid Cloud Strategy)
+**Target:** Ubuntu 24.04 LTS (Backend) + Vercel (Frontend)
 **Install Path:** `/opt/yemenjpt/`
 **Repository:** [YemenJPT](https://github.com/RaidanPro1/YemenJPT---Yemen-Journalistic-PreTrained-Transferon)
 
-## 🏗️ System Architecture
-YemenJPT follows a **Microservices Architecture** designed for data sovereignty, utilizing local AI inference and self-hosted infrastructure.
+## 🏗️ System Architecture (Hybrid)
+YemenJPT uses a **Hybrid Sovereign Architecture** to combine global accessibility with data privacy.
 
-### Core Components
-| Service | Domain | Technology | Description |
-|---------|--------|------------|-------------|
-| **Gateway** | `control.ph-ye.org` | **Traefik** | Reverse Proxy, Load Balancer, and Auto-SSL (Let's Encrypt). |
-| **Frontend** | `ai.ph-ye.org` | **React (Vite)** | The main user interface for journalists and admins. |
-| **API Gateway** | `api.ph-ye.org` | **FastAPI** | Central orchestration logic and routing. |
-| **AI Engine** | - | **Ollama** | Local LLM inference (Llama3, YemenJPT Custom Model). |
-
-### Specialized Microservices
-| Service | Domain | Function |
-|---------|--------|----------|
-| **NLP Radar** | `radar.ph-ye.org` | Misinformation detection & sentiment analysis. |
-| **Legal Meter** | `meter.ph-ye.org` | Constitutional compliance checking (RAG). |
-| **Voice Legacy** | `voice.ph-ye.org` | Audio transcription & dialect recognition. |
-| **Forensics** | `scan.ph-ye.org` | Image verification (ELA) & Deepfake detection. |
-
-### Data Layer
-| Service | Domain | Purpose |
-|---------|--------|---------|
-| **PostgreSQL** | `db.ph-ye.org` | Relational data & user management. |
-| **Qdrant** | `vector.ph-ye.org` | Vector database for RAG & semantic search. |
-| **MinIO** | `vault.ph-ye.org` | S3-compatible object storage for archives. |
-| **Neo4j** | `graph.ph-ye.org` | Knowledge graph for relationship mapping. |
+| Component | Host | Technology | Reason |
+|-----------|------|------------|--------|
+| **Frontend** | **Vercel** | React (Vite) | High speed, DDoS protection, Global CDN. |
+| **Backend** | **VPS (Ubuntu)** | FastAPI, Docker | Heavy AI processing (Ollama), GPU access, Data Sovereignty. |
+| **Database** | **VPS (Ubuntu)** | PostgreSQL, MinIO | Strict data residency compliance (Data stays in Yemen/Private VPS). |
 
 ---
 
-## 🚀 Installation Guide
+## ☁️ Vercel Deployment Guide (Frontend Only)
+
+Since Vercel cannot run Docker or Heavy AI models, we connect the Vercel Frontend to your Sovereign Backend.
 
 ### Prerequisites
-*   **OS:** Ubuntu 24.04 LTS (Clean Install Recommended).
-*   **Hardware:** 4 CPU Cores, 16GB RAM (Minimum), 100GB Storage.
-*   **Domain:** A Cloudflare-managed domain (e.g., `ph-ye.org`).
+1.  Ensure your Backend is live on your VPS (e.g., `https://api.ph-ye.org`).
+2.  Ensure you have a Vercel account.
 
-### Step 1: Deployment
-The `deploy.sh` script handles everything: system updates, dependencies (Docker, Nvidia Container Toolkit), folder structure, file generation, and DNS configuration.
+### Step 1: Push to GitHub
+Upload only the frontend code or the full repo to GitHub.
 
-1.  **Clone the Repository (or create the script):**
+### Step 2: Import to Vercel
+1.  Go to [Vercel Dashboard](https://vercel.com/new).
+2.  Import the `YemenJPT` repository.
+3.  **Build Settings:**
+    *   **Framework Preset:** Vite
+    *   **Build Command:** `npm run build`
+    *   **Output Directory:** `dist`
+
+### Step 3: Connect to Backend
+The `vercel.json` file is already configured to proxy API calls.
+*   Requests to `your-app.vercel.app/api/*` will automatically be routed to `https://api.ph-ye.org/api/*`.
+*   **Important:** If your backend domain is different, update the `destination` URL in `vercel.json` before deploying.
+
+---
+
+## 🚀 VPS Installation Guide (Backend Core)
+
+This sets up the heavy machinery (AI, DB, API) on your private server.
+
+### Prerequisites
+*   **OS:** Ubuntu 24.04 LTS.
+*   **Hardware:** 4 CPU Cores, 16GB RAM (Minimum).
+*   **Domain:** `ph-ye.org` (Managed via Cloudflare).
+
+### Deployment
+The `deploy.sh` script handles everything:
+
+1.  **Clone & Run:**
     ```bash
     git clone https://github.com/RaidanPro1/YemenJPT---Yemen-Journalistic-PreTrained-Transferon.git
-    cd YemenJPT---Yemen-Journalistic-PreTrained-Transferon
-    ```
-
-2.  **Run the Installer:**
-    ```bash
     chmod +x deploy.sh
     sudo ./deploy.sh
     ```
-    *The script will automatically move itself to `/opt/yemenjpt/` and continue execution.*
+    *The script will enforce installation in `/opt/yemenjpt/`, setup Docker, Nginx/Traefik, and configure DNS.*
 
-### Step 2: Post-Installation
-1.  **Verify Services:**
-    Access `https://control.ph-ye.org` (Traefik Dashboard) to ensure all routers are "Success".
-    *   **User:** `admin`
-    *   **Password:** Check the `.env` file generated in `/opt/yemenjpt/`.
-
-2.  **Access Main App:**
-    Go to `https://ai.ph-ye.org`. The frontend should be live.
-
-3.  **Check AI Models:**
-    Ensure the `YemenJPT` model is loaded in Ollama:
-    ```bash
-    docker compose exec ollama ollama list
-    ```
-
-## 🔧 Troubleshooting
-
-*   **DNS Issues:** If domains are not resolving, check Cloudflare dashboard. Ensure records are set to `DNS Only` (Grey Cloud) initially to allow Let's Encrypt to issue certificates.
-*   **Container Errors:** View logs for a specific service:
-    ```bash
-    cd /opt/yemenjpt
-    docker compose logs -f backend
-    ```
-*   **Database Access:** Use `https://db.ph-ye.org` to access Adminer.
-    *   **Server:** `db` (Internal docker name)
-    *   **User:** `raidan_admin` (or check `.env`)
-    *   **DB:** `raidan_vault`
+### verification
+*   **API Health:** Visit `https://api.ph-ye.org/docs` to ensure the backend is running.
+*   **Gateway:** Check `https://control.ph-ye.org` (Traefik Dashboard).
 
 ## 🛡️ Security Note
-This system is designed to be **Sovereign**. 
-*   **Firewall:** UFW is enabled by default, blocking all ports except 80, 443, and 22.
-*   **Data:** All data resides in `/opt/yemenjpt/` on your server. No external API calls are made for inference.
+*   **CORS:** Ensure your FastAPI backend (`main.py`) allows the Vercel domain in `allow_origins`.
+*   **Sovereignty:** Even though the frontend is on Vercel, **NO DATA** is stored there. All audio, text, and images are processed and stored solely on your VPS.

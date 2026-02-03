@@ -1,6 +1,17 @@
 
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { 
+      "source": "/api/(.*)", 
+      "destination": "https://api.ph-ye.org/api/$1" 
+    },
+    { 
+      "source": "/token", 
+      "destination": "https://api.ph-ye.org/token" 
+    },
+    { 
+      "source": "/(.*)", 
+      "destination": "/index.html" 
+    }
   ]
 }
