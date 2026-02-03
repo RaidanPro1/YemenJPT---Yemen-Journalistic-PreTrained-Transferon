@@ -11,22 +11,27 @@ volumes:
   qdrant_data:
   ollama_data:
   n8n_data:
+  neo4j_data:
+  ghost_data:
   letsencrypt:
 
 services:
-  # --- REVERSE PROXY (TRAEFIK) ---
+  # =========================================
+  # 1. GATEWAY & PROXY
+  # =========================================
   traefik:
     image: traefik:v2.10
     container_name: yemenjpt_traefik
     command:
       - "--api.insecure=false"
+      - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.myresolver.acme.email=admin@ai.ph-ye.org" # Changed to generic admin email
+      - "--certificatesresolvers.myresolver.acme.email=admin@ph-ye.org"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
@@ -34,11 +39,23 @@ services:
     volumes:
       - "letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    env_file: .env
+    labels:
+      - "traefik.enable=true"
+      # Control Panel (Traefik Dashboard) -> control.ph-ye.org
+      - "traefik.http.routers.dashboard.rule=Host(`control.ph-ye.org`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=myresolver"
+      - "traefik.http.routers.dashboard.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
     networks:
       - sovereign_net
     restart: always
 
-  # --- FRONTEND (React/Nginx) ---
+  # =========================================
+  # 2. FRONTEND APPLICATION
+  # =========================================
   frontend:
     build:
       context: .
@@ -46,11 +63,11 @@ services:
     container_name: yemenjpt_frontend
     labels:
       - "traefik.enable=true"
-      # Main Domain Rule
+      # Main App -> ai.ph-ye.org
       - "traefik.http.routers.frontend.rule=Host(`ai.ph-ye.org`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
-      # Redirect HTTP -> HTTPS
+      # HTTP -> HTTPS Redirect
       - "traefik.http.routers.frontend-http.rule=Host(`ai.ph-ye.org`)"
       - "traefik.http.routers.frontend-http.entrypoints=web"
       - "traefik.http.routers.frontend-http.middlewares=https-redirect"
@@ -59,20 +76,25 @@ services:
       - sovereign_net
     restart: always
 
-  # --- BACKEND (FastAPI) ---
+  # =========================================
+  # 3. CORE MICROSERVICES (Python)
+  # =========================================
+  
+  # A. Main Gateway API -> api.ph-ye.org
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: yemenjpt_backend
+    container_name: yemenjpt_api
     env_file: .env
+    working_dir: /app/backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
     volumes:
       - ./backend:/app/backend
       - ./uploads:/app/uploads
     labels:
       - "traefik.enable=true"
-      # Route /api, /docs, /openapi.json to backend
-      - "traefik.http.routers.backend.rule=Host(`ai.ph-ye.org`) && (PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/openapi.json`))"
+      - "traefik.http.routers.backend.rule=Host(`api.ph-ye.org`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=myresolver"
     networks:
@@ -82,7 +104,88 @@ services:
       - ollama
     restart: always
 
-  # --- AI ENGINE (OLLAMA) ---
+  # B. NLP Engine (Radar) -> radar.ph-ye.org
+  nlp_engine:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: yemenjpt_radar
+    command: uvicorn main:app --host 0.0.0.0 --port 8001
+    working_dir: /app/nlp-engine
+    volumes:
+      - ./nlp-engine:/app/nlp-engine
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.radar.rule=Host(`radar.ph-ye.org`)"
+      - "traefik.http.routers.radar.entrypoints=websecure"
+      - "traefik.http.routers.radar.tls.certresolver=myresolver"
+    networks:
+      - sovereign_net
+    restart: always
+
+  # C. Legal Meter -> meter.ph-ye.org
+  legal_meter:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: yemenjpt_meter
+    command: uvicorn main:app --host 0.0.0.0 --port 8002
+    working_dir: /app/legal-meter
+    volumes:
+      - ./legal-meter:/app/legal-meter
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.meter.rule=Host(`meter.ph-ye.org`)"
+      - "traefik.http.routers.meter.entrypoints=websecure"
+      - "traefik.http.routers.meter.tls.certresolver=myresolver"
+    networks:
+      - sovereign_net
+    restart: always
+
+  # D. Voice Legacy -> voice.ph-ye.org
+  voice_legacy:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: yemenjpt_voice
+    command: uvicorn main:app --host 0.0.0.0 --port 8003
+    working_dir: /app/voice-legacy
+    volumes:
+      - ./voice-legacy:/app/voice-legacy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.voice.rule=Host(`voice.ph-ye.org`)"
+      - "traefik.http.routers.voice.entrypoints=websecure"
+      - "traefik.http.routers.voice.tls.certresolver=myresolver"
+    networks:
+      - sovereign_net
+    restart: always
+
+  # E. Forensics -> scan.ph-ye.org
+  forensics:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: yemenjpt_forensics
+    command: uvicorn main:app --host 0.0.0.0 --port 8080
+    working_dir: /app/forensics-service
+    volumes:
+      - ./forensics-service:/app/forensics-service
+      - ./uploads:/app/uploads
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.forensics.rule=Host(`scan.ph-ye.org`)"
+      - "traefik.http.routers.forensics.entrypoints=websecure"
+      - "traefik.http.routers.forensics.tls.certresolver=myresolver"
+    networks:
+      - sovereign_net
+    restart: always
+
+  # =========================================
+  # 4. DATA STORES & INFRASTRUCTURE
+  # =========================================
+
+  # AI Engine (Ollama)
   ollama:
     image: ollama/ollama:latest
     container_name: yemenjpt_ollama
@@ -90,17 +193,68 @@ services:
       - ollama_data:/root/.ollama
     networks:
       - sovereign_net
-    # GPU Support (Uncomment if NVIDIA GPU is present)
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
     restart: always
 
-  # --- DATABASE (POSTGRES) ---
+  # Object Storage (MinIO) -> vault.ph-ye.org
+  minio:
+    image: minio/minio:latest
+    container_name: yemenjpt_minio
+    command: server /data --console-address ":9001"
+    env_file: .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    volumes:
+      - minio_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`vault.ph-ye.org`)"
+      - "traefik.http.routers.minio.entrypoints=websecure"
+      - "traefik.http.routers.minio.tls.certresolver=myresolver"
+      - "traefik.http.services.minio.loadbalancer.server.port=9000"
+    networks:
+      - sovereign_net
+    restart: always
+
+  # Automation (n8n) -> studio.ph-ye.org
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: yemenjpt_n8n
+    env_file: .env
+    environment:
+      - N8N_HOST=studio.ph-ye.org
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`studio.ph-ye.org`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
+      - "traefik.http.routers.n8n.tls.certresolver=myresolver"
+    networks:
+      - sovereign_net
+    restart: always
+
+  # Vector DB (Qdrant) -> vector.ph-ye.org
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: yemenjpt_qdrant
+    volumes:
+      - qdrant_data:/qdrant/storage
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.qdrant.rule=Host(`vector.ph-ye.org`)"
+      - "traefik.http.routers.qdrant.entrypoints=websecure"
+      - "traefik.http.routers.qdrant.tls.certresolver=myresolver"
+    networks:
+      - sovereign_net
+    restart: always
+
+  # Relational DB (Postgres)
   db:
     image: postgres:15-alpine
     container_name: yemenjpt_db
@@ -115,51 +269,52 @@ services:
       - sovereign_net
     restart: always
 
-  # --- VECTOR DB (QDRANT) ---
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: yemenjpt_qdrant
-    volumes:
-      - qdrant_data:/qdrant/storage
+  # DB GUI (Adminer) -> db.ph-ye.org
+  adminer:
+    image: adminer
+    container_name: yemenjpt_adminer
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.adminer.rule=Host(`db.ph-ye.org`)"
+      - "traefik.http.routers.adminer.entrypoints=websecure"
+      - "traefik.http.routers.adminer.tls.certresolver=myresolver"
     networks:
       - sovereign_net
     restart: always
 
-  # --- STORAGE (MINIO) ---
-  minio:
-    image: minio/minio:latest
-    container_name: yemenjpt_minio
-    command: server /data --console-address ":9001"
+  # Graph DB (Neo4j) -> graph.ph-ye.org
+  neo4j:
+    image: neo4j:latest
+    container_name: yemenjpt_graph
     env_file: .env
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+      NEO4J_AUTH: ${NEO4J_AUTH}
     volumes:
-      - minio_data:/data
+      - neo4j_data:/data
     labels:
       - "traefik.enable=true"
-      # Route files subdomain to MinIO
-      - "traefik.http.routers.minio.rule=Host(`files.ai.ph-ye.org`)"
-      - "traefik.http.routers.minio.entrypoints=websecure"
-      - "traefik.http.routers.minio.tls.certresolver=myresolver"
-      - "traefik.http.services.minio.loadbalancer.server.port=9000"
+      - "traefik.http.routers.neo4j.rule=Host(`graph.ph-ye.org`)"
+      - "traefik.http.routers.neo4j.entrypoints=websecure"
+      - "traefik.http.routers.neo4j.tls.certresolver=myresolver"
+      - "traefik.http.services.neo4j.loadbalancer.server.port=7474"
     networks:
       - sovereign_net
     restart: always
 
-  # --- AUTOMATION (n8n) ---
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: yemenjpt_n8n
+  # CMS (Ghost) -> news.ph-ye.org
+  ghost:
+    image: ghost:latest
+    container_name: yemenjpt_news
     env_file: .env
+    environment:
+      url: https://news.ph-ye.org
     volumes:
-      - n8n_data:/home/node/.n8n
+      - ghost_data:/var/lib/ghost/content
     labels:
       - "traefik.enable=true"
-      # Route automation subdomain to n8n
-      - "traefik.http.routers.n8n.rule=Host(`automation.ai.ph-ye.org`)"
-      - "traefik.http.routers.n8n.entrypoints=websecure"
-      - "traefik.http.routers.n8n.tls.certresolver=myresolver"
+      - "traefik.http.routers.ghost.rule=Host(`news.ph-ye.org`)"
+      - "traefik.http.routers.ghost.entrypoints=websecure"
+      - "traefik.http.routers.ghost.tls.certresolver=myresolver"
     networks:
       - sovereign_net
     restart: always
