@@ -11,20 +11,19 @@ from typing import List, Dict, Any
 from ai_router import AIRouter
 
 # إعداد التطبيق
-app = FastAPI(title="YemenJPT Sovereign Core v9.5")
+app = FastAPI(title="YemenJPT Sovereign Core v9.6 (Localhost)")
 
-# CORS Configuration for Vercel Hybrid Deployment
-# Allows requests from localhost (dev) and any Vercel deployment (prod)
+# CORS Configuration for Localhost
 origins = [
     "http://localhost:3000",
-    "http://localhost:5173",
-    "https://ai.ph-ye.org",
-    "https://*.vercel.app" # Wildcard for Vercel Preview/Production
+    "http://127.0.0.1:3000",
+    "http://0.0.0.0:3000",
+    "*"  # Allow all for local dev ease, restrict in production if needed
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In strict production, replace "*" with specific domains
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,11 +55,11 @@ class ChatRequest(BaseModel):
 async def health_check():
     return {
         "status": "operational",
-        "deployment_mode": "Hybrid (Vercel + Sovereign VPS)",
+        "deployment_mode": "Localhost Port-Based",
         "containers": [
-            {"id": "api", "name": "YJPT_api", "status": "running", "uptime": "14d 2h", "latency": "12ms"},
-            {"id": "radar", "name": "YJPT_Radar", "status": "running", "uptime": "14d 2h", "latency": "45ms"},
-            {"id": "legal", "name": "YJPT_LegalMeter", "status": "running", "uptime": "1d 4h", "latency": "120ms"}
+            {"id": "api", "name": "YJPT_api", "status": "running", "uptime": "Local", "latency": "1ms"},
+            {"id": "radar", "name": "YJPT_Radar", "status": "running", "uptime": "Local", "latency": "2ms"},
+            {"id": "legal", "name": "YJPT_LegalMeter", "status": "running", "uptime": "Local", "latency": "2ms"}
         ]
     }
 
@@ -108,7 +107,10 @@ async def legal_meter(request: AnalysisRequest):
 # Token endpoint for Auth Guard
 @app.post("/token")
 async def login_for_access_token(form_data: Any = Depends()):
-    # Mock Auth for Vercel Demo Compatibility
+    # Mock Auth
+    if form_data.username == "admin" and form_data.password == os.getenv("MASTER_PASSWORD", "admin"):
+         return {"access_token": "sovereign_token_localhost", "token_type": "bearer"}
+    # Fallback for old creds
     if form_data.username == "info@raidan.pro" and form_data.password == "samah@2052024":
         return {"access_token": "sovereign_token_xyz", "token_type": "bearer"}
     raise HTTPException(status_code=400, detail="Incorrect username or password")

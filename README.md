@@ -1,71 +1,73 @@
 
 # YemenJPT Sovereign Intelligence Platform
-**Version:** 9.5 (Hybrid Cloud Strategy)
-**Target:** Ubuntu 24.04 LTS (Backend) + Vercel (Frontend)
+**Version:** 9.6 (Localhost / Ports Edition)
+**Target:** Ubuntu 24.04 LTS
 **Install Path:** `/opt/yemenjpt/`
-**Repository:** [YemenJPT](https://github.com/RaidanPro1/YemenJPT---Yemen-Journalistic-PreTrained-Transferon)
+**Architecture:** Microservices exposed via Direct Ports
 
-## 🏗️ System Architecture (Hybrid)
-YemenJPT uses a **Hybrid Sovereign Architecture** to combine global accessibility with data privacy.
+## 🏗️ System Architecture
+This version runs entirely on your local server or VPS without requiring a domain name or DNS configuration. All services are exposed on specific ports.
 
-| Component | Host | Technology | Reason |
-|-----------|------|------------|--------|
-| **Frontend** | **Vercel** | React (Vite) | High speed, DDoS protection, Global CDN. |
-| **Backend** | **VPS (Ubuntu)** | FastAPI, Docker | Heavy AI processing (Ollama), GPU access, Data Sovereignty. |
-| **Database** | **VPS (Ubuntu)** | PostgreSQL, MinIO | Strict data residency compliance (Data stays in Yemen/Private VPS). |
-
----
-
-## ☁️ Vercel Deployment Guide (Frontend Only)
-
-Since Vercel cannot run Docker or Heavy AI models, we connect the Vercel Frontend to your Sovereign Backend.
-
-### Prerequisites
-1.  Ensure your Backend is live on your VPS (e.g., `https://api.ph-ye.org`).
-2.  Ensure you have a Vercel account.
-
-### Step 1: Push to GitHub
-Upload only the frontend code or the full repo to GitHub.
-
-### Step 2: Import to Vercel
-1.  Go to [Vercel Dashboard](https://vercel.com/new).
-2.  Import the `YemenJPT` repository.
-3.  **Build Settings:**
-    *   **Framework Preset:** Vite
-    *   **Build Command:** `npm run build`
-    *   **Output Directory:** `dist`
-
-### Step 3: Connect to Backend
-The `vercel.json` file is already configured to proxy API calls.
-*   Requests to `your-app.vercel.app/api/*` will automatically be routed to `https://api.ph-ye.org/api/*`.
-*   **Important:** If your backend domain is different, update the `destination` URL in `vercel.json` before deploying.
+### Service Port Mapping
+| Service | Local URL | Description |
+|---------|-----------|-------------|
+| **Frontend** | `http://localhost:3000` | Main User Interface |
+| **API Backend** | `http://localhost:8000` | Core Logic & Router |
+| **NLP Engine** | `http://localhost:8001` | Sentiment & Entity Extraction |
+| **Legal Meter** | `http://localhost:8002` | Constitutional Compliance |
+| **Voice Engine** | `http://localhost:8003` | Audio Processing |
+| **Forensics** | `http://localhost:8080` | Image Analysis |
+| **MinIO Console** | `http://localhost:9001` | S3 Storage Manager |
+| **MinIO API** | `http://localhost:9000` | S3 API Endpoint |
+| **n8n** | `http://localhost:5678` | Workflow Automation |
+| **Qdrant** | `http://localhost:6333` | Vector Database |
+| **Neo4j** | `http://localhost:7474` | Knowledge Graph |
+| **Adminer** | `http://localhost:8081` | Database GUI (Postgres) |
+| **Ghost** | `http://localhost:2368` | News CMS |
 
 ---
 
-## 🚀 VPS Installation Guide (Backend Core)
-
-This sets up the heavy machinery (AI, DB, API) on your private server.
+## 🚀 Installation Guide
 
 ### Prerequisites
 *   **OS:** Ubuntu 24.04 LTS.
 *   **Hardware:** 4 CPU Cores, 16GB RAM (Minimum).
-*   **Domain:** `ph-ye.org` (Managed via Cloudflare).
+*   **Network:** Ports listed above must be open (Deploy script handles UFW).
 
-### Deployment
-The `deploy.sh` script handles everything:
-
-1.  **Clone & Run:**
+### Step 1: Deploy
+1.  **Clone the Repository:**
     ```bash
     git clone https://github.com/RaidanPro1/YemenJPT---Yemen-Journalistic-PreTrained-Transferon.git
+    cd YemenJPT---Yemen-Journalistic-PreTrained-Transferon
+    ```
+
+2.  **Run the Installer:**
+    ```bash
     chmod +x deploy.sh
     sudo ./deploy.sh
     ```
-    *The script will enforce installation in `/opt/yemenjpt/`, setup Docker, Nginx/Traefik, and configure DNS.*
+    *The script will move files to `/opt/yemenjpt/`, install Docker, build containers, and expose ports.*
 
-### verification
-*   **API Health:** Visit `https://api.ph-ye.org/docs` to ensure the backend is running.
-*   **Gateway:** Check `https://control.ph-ye.org` (Traefik Dashboard).
+### Step 2: Access
+Open your browser and navigate to `http://YOUR_SERVER_IP:3000`.
 
-## 🛡️ Security Note
-*   **CORS:** Ensure your FastAPI backend (`main.py`) allows the Vercel domain in `allow_origins`.
-*   **Sovereignty:** Even though the frontend is on Vercel, **NO DATA** is stored there. All audio, text, and images are processed and stored solely on your VPS.
+*   **Default User:** `admin`
+*   **Default Password:** Check the `.env` file generated in `/opt/yemenjpt/`.
+
+## 🔧 Maintenance
+
+**View Logs:**
+```bash
+cd /opt/yemenjpt
+docker compose logs -f backend
+```
+
+**Restart Services:**
+```bash
+docker compose restart
+```
+
+**Stop System:**
+```bash
+docker compose down
+```
