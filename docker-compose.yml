@@ -7,9 +7,7 @@ networks:
 
 volumes:
   db_data:
-  minio_data:
   qdrant_data:
-  ollama_data:
   n8n_data:
   neo4j_data:
   ghost_data:
@@ -44,6 +42,12 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
+    environment:
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - ENABLE_S3=false
+      - API_BASE_URL=http://localhost:8000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./backend:/app/backend
       - ./uploads:/app/uploads
@@ -51,7 +55,6 @@ services:
       - sovereign_net
     depends_on:
       - db
-      - ollama
     restart: always
 
   # B. NLP Engine (Radar) (Port 8001)
@@ -123,36 +126,8 @@ services:
   # 3. DATA STORES & INFRASTRUCTURE
   # =========================================
 
-  # AI Engine (Ollama) (Port 11434)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: yemenjpt_ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    networks:
-      - sovereign_net
-    restart: always
-
-  # Object Storage (MinIO) (Console: 9001, API: 9000)
-  minio:
-    image: minio/minio:latest
-    container_name: yemenjpt_minio
-    command: server /data --console-address ":9001"
-    env_file: .env
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
-    volumes:
-      - minio_data:/data
-    networks:
-      - sovereign_net
-    restart: always
-
+  # MinIO Service removed temporarily for pure local storage mode.
+  
   # Automation (n8n) (Port 5678)
   n8n:
     image: n8nio/n8n:latest

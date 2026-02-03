@@ -2,10 +2,11 @@
 #!/bin/bash
 
 # =======================================================
-# YemenJPT Sovereign Platform - Localhost Deploy Script
+# YemenJPT Sovereign Platform - Native AI Deploy Script
 # Target: Ubuntu 24.04 LTS
 # Install Path: /opt/yemenjpt/
-# Mode: Localhost (Direct Ports)
+# Architecture: Native Ollama + Dockerized Microservices
+# Storage: Localhost (S3 Disabled by default)
 # =======================================================
 
 set -e
@@ -26,7 +27,7 @@ echo -e "${BLUE} ╚████╔╝ █████╗  ██╔████
 echo -e "${BLUE}  ╚██╔╝  ██╔══╝  ██║╚██╔╝██║██╔══╝  ██║╚██╗██║██   ██║██╔═══╝  ███╔╝  ${NC}"
 echo -e "${BLUE}   ██║   ███████╗██║ ╚═╝ ██║███████╗██║ ╚████║╚█████╔╝██║     ███████╗${NC}"
 echo -e "${BLUE}   ╚═╝   ╚══════╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═══╝ ╚════╝ ╚═╝     ╚══════╝${NC}"
-echo -e "${GREEN}>>> SOVEREIGN LOCALHOST DEPLOYMENT >>> /opt/yemenjpt/${NC}"
+echo -e "${GREEN}>>> SOVEREIGN LOCALHOST DEPLOYMENT (NO S3) >>> /opt/yemenjpt/${NC}"
 
 # 1. ROOT CHECK
 if [ "$EUID" -ne 0 ]; then 
@@ -125,7 +126,6 @@ done
 
 # 5. PORT CONFLICT RESOLUTION
 echo -e "${YELLOW}[3/8] Freeing up ports...${NC}"
-# Stop services that might conflict with our exposed ports
 systemctl stop apache2 || true
 systemctl disable apache2 || true
 systemctl stop nginx || true
@@ -142,54 +142,72 @@ if ! command -v docker &> /dev/null; then
     apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 fi
 
-# 7. CONFIGURATION & SECRETS
-echo -e "${YELLOW}[5/8] Generating Sovereign Secrets...${NC}"
+# 7. NATIVE OLLAMA INSTALLATION (ALWAYS)
+echo -e "${YELLOW}[5/8] Installing Native Ollama (System Service)...${NC}"
+# Always run install script to ensure latest version or install if missing
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Ensure service is running
+echo "Restarting Ollama service..."
+systemctl daemon-reload
+systemctl enable ollama
+systemctl restart ollama
+
+# 8. CONFIGURATION & SECRETS (Localhost Mode)
+echo -e "${YELLOW}[6/8] Generating Sovereign Secrets...${NC}"
 if [ ! -f .env ]; then
     cp .env.example .env
     JWT_SECRET=$(openssl rand -hex 32)
     DB_PASS=$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9')
-    MINIO_PASS=$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9')
     N8N_PASS=$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9')
     MASTER_PASS=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9')
+    SERVER_IP=$(curl -s https://api.ipify.org || echo "localhost")
 
+    # Force Localhost configs
     sed -i "s/JWT_SECRET=/JWT_SECRET=${JWT_SECRET}/" .env
     sed -i "s/DB_PASSWORD=/DB_PASSWORD=${DB_PASS}/" .env
-    sed -i "s/MINIO_ROOT_PASSWORD=/MINIO_ROOT_PASSWORD=${MINIO_PASS}/" .env
     sed -i "s/N8N_PASSWORD=/N8N_PASSWORD=${N8N_PASS}/" .env
     sed -i "s/MASTER_PASSWORD=/MASTER_PASSWORD=${MASTER_PASS}/" .env
     
-    echo -e "${GREEN}Secrets generated. MASTER PASSWORD: ${MASTER_PASS}${NC}"
+    # Disable S3 by default for local deployment
+    echo "ENABLE_S3=false" >> .env
+    echo "API_BASE_URL=http://localhost:8000" >> .env
+    
+    echo -e "${GREEN}Secrets generated. S3 Disabled (Local Storage Active).${NC}"
 else
     echo ".env exists. Skipping generation."
 fi
 
-# 8. FIREWALL (UFW)
-echo -e "${YELLOW}[6/8] Configuring Local Firewall...${NC}"
+# 9. FIREWALL (UFW)
+echo -e "${YELLOW}[7/8] Configuring Local Firewall...${NC}"
 ufw allow 22/tcp
-# Allow all necessary service ports
 ufw allow 3000/tcp  # Frontend
 ufw allow 8000/tcp  # Backend
 ufw allow 8001/tcp
 ufw allow 8002/tcp
 ufw allow 8003/tcp
 ufw allow 8080/tcp
-ufw allow 8081/tcp  # Adminer
-ufw allow 9000/tcp  # MinIO API
-ufw allow 9001/tcp  # MinIO Console
-ufw allow 5678/tcp  # n8n
-ufw allow 6333/tcp  # Qdrant
-ufw allow 7474/tcp  # Neo4j HTTP
-ufw allow 2368/tcp  # Ghost
+ufw allow 8081/tcp
+# ufw allow 9000/tcp # MinIO Disabled temporarily
+# ufw allow 9001/tcp
+ufw allow 5678/tcp
+ufw allow 6333/tcp
+ufw allow 7474/tcp
+ufw allow 2368/tcp
+ufw allow 11434/tcp # Native Ollama
 ufw --force enable
 
-# 9. BUILD & LAUNCH
-echo -e "${YELLOW}[7/8] Building Microservices Stack...${NC}"
+# 10. BUILD & LAUNCH SERVICES
+echo -e "${YELLOW}[8/8] Building Microservices Stack...${NC}"
+# Stop any existing containers to free up resources/ports
 docker compose down --remove-orphans || true
 docker compose up -d --build
 
-# 10. MODEL PROVISIONING
-echo -e "${YELLOW}[8/8] Provisioning AI Models...${NC}"
-sleep 10
+# 11. MODEL PROVISIONING (NATIVE)
+echo -e "${YELLOW}[+] Provisioning AI Models via Native Ollama...${NC}"
+sleep 5 # Wait for Ollama service to fully init
+
+# Ensure Modelfile exists
 if [ ! -f "backend/data/Modelfile.YemenJPT" ]; then
     echo "Creating Default YemenJPT Modelfile..."
     cat <<EOF > backend/data/Modelfile.YemenJPT
@@ -198,23 +216,21 @@ SYSTEM "You are YemenJPT, a sovereign AI assistant. You adhere to strict ethical
 PARAMETER temperature 0.3
 EOF
 fi
-docker compose exec -T ollama ollama pull llama3
-docker compose exec -T ollama ollama create YemenJPT -f /root/.ollama/Modelfile.YemenJPT || \
-docker compose exec -T ollama ollama create YemenJPT -f /app/backend/data/Modelfile.YemenJPT || \
-echo "Model creation skipped (manual intervention may be required)."
+
+echo "Pulling Base Model (llama3)..."
+ollama pull llama3
+
+echo "Creating Custom Model (YemenJPT)..."
+ollama create YemenJPT -f backend/data/Modelfile.YemenJPT || echo "Warning: Model creation failed. Check Ollama logs."
 
 SERVER_IP=$(curl -s https://api.ipify.org)
 
 echo -e "${GREEN}========================================================${NC}"
-echo -e "${GREEN}   YEMENJPT LOCALHOST SYSTEM IS LIVE                    ${NC}"
+echo -e "${GREEN}   YEMENJPT SYSTEM IS LIVE (LOCALHOST / NO S3)          ${NC}"
 echo -e "${GREEN}========================================================${NC}"
-echo -e "Main Frontend:     http://$SERVER_IP:3000 (or http://localhost:3000)"
+echo -e "Main Frontend:     http://$SERVER_IP:3000"
 echo -e "API Gateway:       http://$SERVER_IP:8000"
-echo -e "MinIO Console:     http://$SERVER_IP:9001"
-echo -e "n8n Automation:    http://$SERVER_IP:5678"
-echo -e "Adminer DB:        http://$SERVER_IP:8081"
-echo -e "Qdrant DB:         http://$SERVER_IP:6333"
-echo -e "Ghost CMS:         http://$SERVER_IP:2368"
-echo -e ""
+echo -e "AI Engine:         http://$SERVER_IP:11434 (Native)"
+echo -e "Storage:           Local Disk (/opt/yemenjpt/uploads)"
 echo -e "Master User:       admin"
 echo -e "Check .env for passwords."

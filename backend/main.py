@@ -1,6 +1,7 @@
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import subprocess
 import os
@@ -11,14 +12,14 @@ from typing import List, Dict, Any
 from ai_router import AIRouter
 
 # إعداد التطبيق
-app = FastAPI(title="YemenJPT Sovereign Core v9.6 (Localhost)")
+app = FastAPI(title="YemenJPT Sovereign Core v9.8 (Localhost/No-S3)")
 
 # CORS Configuration for Localhost
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://0.0.0.0:3000",
-    "*"  # Allow all for local dev ease, restrict in production if needed
+    "*"
 ]
 
 app.add_middleware(
@@ -29,10 +30,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configuration
 UPLOAD_DIR = "/app/uploads"
 VOICE_DIR = "/app/shared-uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(VOICE_DIR, exist_ok=True)
+
+# Mount Uploads directory to serve files locally (Replacement for S3 Presigned URLs)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # Initialize Sovereign AI Router
 ai_router = AIRouter()
@@ -55,7 +60,7 @@ class ChatRequest(BaseModel):
 async def health_check():
     return {
         "status": "operational",
-        "deployment_mode": "Localhost Port-Based",
+        "deployment_mode": "Localhost Port-Based (Storage: Local)",
         "containers": [
             {"id": "api", "name": "YJPT_api", "status": "running", "uptime": "Local", "latency": "1ms"},
             {"id": "radar", "name": "YJPT_Radar", "status": "running", "uptime": "Local", "latency": "2ms"},
@@ -91,8 +96,7 @@ async def forensic_scan(file: UploadFile = File(...)):
         return json.loads(result.stdout)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Forensic Engine Failure: {str(e)}")
-    finally:
-        if os.path.exists(temp_path): os.remove(temp_path)
+    # Note: We keep the file in temp for analysis, cleaner might remove it later
 
 # 3. Service: Legal-Meter (Integration endpoint)
 @app.post("/api/services/legal-meter")

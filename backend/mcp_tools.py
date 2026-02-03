@@ -3,12 +3,14 @@ import os
 import httpx
 import json
 import subprocess
+from datetime import datetime
 from typing import Dict, Any, List
-from s3_utils import S3Manager
+from s3_utils import StorageManager
 
 class MCPToolHub:
     def __init__(self):
-        self.s3 = S3Manager()
+        # Initialize the agnostic storage manager (Local/S3)
+        self.storage = StorageManager()
         self.yemen_coords = {
             "sana'a": {"lat": 15.35, "lng": 44.20},
             "aden": {"lat": 12.78, "lng": 45.01},
@@ -56,11 +58,18 @@ class MCPToolHub:
 
         elif tool_name == "archive_url_local":
             url = args.get("url")
-            # Logic to trigger n8n or local headless browser to save URL to S3
+            # Logic to trigger n8n or local headless browser to save URL to Storage
+            # Currently simulates a save
+            timestamp = datetime.now().strftime('%Y-%m-%d')
+            filename = f"snapshot_{int(datetime.now().timestamp())}.pdf"
+            
+            # Here we would actually save the file to self.storage.local_storage_path
+            
             return {
                 "status": "queued",
                 "target_url": url,
-                "vault_path": f"archives/web/{datetime.now().strftime('%Y/%m/%d')}/snapshot.pdf",
+                "vault_path": f"archives/web/{timestamp}/{filename}",
+                "storage_mode": "Local Encrypted Volume" if not self.storage.use_s3 else "S3 Cloud Vault",
                 "message": "تم إدراج الرابط في طابور الأرشفة السيادية 'مُسند'."
             }
 

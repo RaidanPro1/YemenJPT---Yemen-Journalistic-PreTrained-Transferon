@@ -1,29 +1,26 @@
 
 # YemenJPT Sovereign Intelligence Platform
-**Version:** 9.6 (Localhost / Ports Edition)
+**Version:** 9.8 (Native AI + Local Storage)
 **Target:** Ubuntu 24.04 LTS
 **Install Path:** `/opt/yemenjpt/`
-**Architecture:** Microservices exposed via Direct Ports
+**Architecture:** Native Ollama + Docker Microservices
 
 ## 🏗️ System Architecture
-This version runs entirely on your local server or VPS without requiring a domain name or DNS configuration. All services are exposed on specific ports.
+This version runs microservices in Docker but keeps the AI Engine (Ollama) **Native** on the host OS.
+**Storage Update:** S3 (MinIO) dependency is temporarily disabled. All files are stored securely on the local disk (`/opt/yemenjpt/uploads`).
 
 ### Service Port Mapping
 | Service | Local URL | Description |
 |---------|-----------|-------------|
 | **Frontend** | `http://localhost:3000` | Main User Interface |
 | **API Backend** | `http://localhost:8000` | Core Logic & Router |
+| **AI Engine** | `http://localhost:11434` | **Native Ollama (Host)** |
+| **Storage** | `/opt/yemenjpt/uploads` | **Local Disk (No S3)** |
 | **NLP Engine** | `http://localhost:8001` | Sentiment & Entity Extraction |
 | **Legal Meter** | `http://localhost:8002` | Constitutional Compliance |
 | **Voice Engine** | `http://localhost:8003` | Audio Processing |
 | **Forensics** | `http://localhost:8080` | Image Analysis |
-| **MinIO Console** | `http://localhost:9001` | S3 Storage Manager |
-| **MinIO API** | `http://localhost:9000` | S3 API Endpoint |
-| **n8n** | `http://localhost:5678` | Workflow Automation |
 | **Qdrant** | `http://localhost:6333` | Vector Database |
-| **Neo4j** | `http://localhost:7474` | Knowledge Graph |
-| **Adminer** | `http://localhost:8081` | Database GUI (Postgres) |
-| **Ghost** | `http://localhost:2368` | News CMS |
 
 ---
 
@@ -32,7 +29,7 @@ This version runs entirely on your local server or VPS without requiring a domai
 ### Prerequisites
 *   **OS:** Ubuntu 24.04 LTS.
 *   **Hardware:** 4 CPU Cores, 16GB RAM (Minimum).
-*   **Network:** Ports listed above must be open (Deploy script handles UFW).
+*   **Network:** Ports listed above must be open.
 
 ### Step 1: Deploy
 1.  **Clone the Repository:**
@@ -46,7 +43,7 @@ This version runs entirely on your local server or VPS without requiring a domai
     chmod +x deploy.sh
     sudo ./deploy.sh
     ```
-    *The script will move files to `/opt/yemenjpt/`, install Docker, build containers, and expose ports.*
+    *The script will move files to `/opt/yemenjpt/`, install Native Ollama, configure Local Storage, and start Docker services.*
 
 ### Step 2: Access
 Open your browser and navigate to `http://YOUR_SERVER_IP:3000`.
@@ -54,20 +51,15 @@ Open your browser and navigate to `http://YOUR_SERVER_IP:3000`.
 *   **Default User:** `admin`
 *   **Default Password:** Check the `.env` file generated in `/opt/yemenjpt/`.
 
-## 🔧 Maintenance
+## 🧠 AI Management (Native)
+Since Ollama is running natively, you can interact with it directly from the terminal:
 
-**View Logs:**
+**Check Status:**
 ```bash
-cd /opt/yemenjpt
-docker compose logs -f backend
+systemctl status ollama
 ```
 
-**Restart Services:**
+**Run Model Manually:**
 ```bash
-docker compose restart
-```
-
-**Stop System:**
-```bash
-docker compose down
+ollama run YemenJPT "كيف حالك؟"
 ```
