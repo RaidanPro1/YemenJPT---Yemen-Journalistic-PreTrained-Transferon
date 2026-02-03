@@ -7,30 +7,27 @@ import OSINTDashboard from './OSINTDashboard';
 import GeoIntDashboard from './GeoIntDashboard';
 import SettingsPage from './SettingsPage';
 import ModelManager from './ModelManager';
-import { History, MessageSquare, Star, Clock, BrainCircuit, Shield } from 'lucide-react';
+import ModelTraining from './ModelTraining';
+import { MessageSquare, Star, Clock, BrainCircuit, Shield, Database } from 'lucide-react';
 
-type ViewState = 'insight' | 'models' | 'forensics' | 'osint' | 'geoint' | 'settings';
+type ViewState = 'insight' | 'models' | 'training' | 'forensics' | 'osint' | 'geoint' | 'settings';
 
 const AdminView: React.FC<{ onSwitchToJournalist: () => void }> = ({ onSwitchToJournalist }) => {
   const [activeView, setActiveView] = useState<ViewState>('insight');
 
-  const sidebarItems = [
-    { id: 'insight', icon: <MessageSquare size={20} />, label: 'الدردشة السيادية' },
-    { id: 'models', icon: <BrainCircuit size={20} />, label: 'إدارة الموديلات' },
-    { id: 'forensics', icon: <Shield size={20} />, label: 'الجنايات الرقمية' },
-    { id: 'osint', icon: <Clock size={20} />, label: 'الاستخبارات' },
-    { id: 'settings', icon: <Shield size={20} />, label: 'الإعدادات والسيادة' },
-  ];
+  // getNavTitle removed as it's handled inside renderView logic or we can adapt AdminLayout.
+  // Assuming AdminLayout takes navTitle as prop.
 
   const getNavTitle = () => {
-    switch (activeView) {
-      case 'insight': return 'المحادثات الاستقصائية';
-      case 'models': return 'نواة YemenJPT';
-      case 'forensics': return 'مختبر الأدلة';
-      case 'osint': return 'المصادر المفتوحة';
-      case 'settings': return 'لوحة التحكم الجذرية';
-      default: return 'YemenJPT Command';
-    }
+      switch (activeView) {
+        case 'insight': return 'المحادثات الاستقصائية';
+        case 'models': return 'نواة YemenJPT';
+        case 'training': return 'تدريب النماذج';
+        case 'forensics': return 'مختبر الأدلة';
+        case 'osint': return 'المصادر المفتوحة';
+        case 'settings': return 'لوحة التحكم الجذرية';
+        default: return 'YemenJPT Command';
+      }
   };
 
   const renderNavList = () => {
@@ -41,11 +38,6 @@ const AdminView: React.FC<{ onSwitchToJournalist: () => void }> = ({ onSwitchToJ
           تحقيق ميناء الحديدة
           <Star size={12} className="text-brand-gold fill-brand-gold" />
         </button>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-2 mt-6">سجل النشاط</p>
-        <div className="space-y-1">
-           <button className="w-full text-right p-3 rounded-xl hover:bg-slate-50 text-slate-500 text-xs font-bold transition-all truncate">فحص بصمة ELA لملف 092</button>
-           <button className="w-full text-right p-3 rounded-xl hover:bg-slate-50 text-slate-500 text-xs font-bold transition-all truncate">تتبع حوالة مالية مشبوهة</button>
-        </div>
       </div>
     );
   };
@@ -54,6 +46,7 @@ const AdminView: React.FC<{ onSwitchToJournalist: () => void }> = ({ onSwitchToJ
     switch (activeView) {
       case 'insight': return <ChatInterface />;
       case 'models': return <ModelManager />;
+      case 'training': return <ModelTraining />;
       case 'forensics': return <ForensicsDashboard />;
       case 'osint': return <OSINTDashboard />;
       case 'geoint': return <GeoIntDashboard />;

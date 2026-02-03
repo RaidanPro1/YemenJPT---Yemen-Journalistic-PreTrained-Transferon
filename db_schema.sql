@@ -36,3 +36,16 @@ INSERT INTO insight_indicators (time, indicator_type, value, location_id, confid
 VALUES 
 (NOW() - INTERVAL '1 hour', 'bgp_anomalies', 14.5, 'Aden_Gateway', 0.92),
 (NOW() - INTERVAL '30 minutes', 'car_density', 0.85, 'Sana_Central_Market', 0.78);
+
+-- 5. جدول سجلات الحوكمة والمساءلة (Governance & Audit Logs)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    prompt_text TEXT,              -- ماذا سأل المستخدم؟
+    model_response TEXT,           -- بماذا أجاب النظام؟
+    safety_flag BOOLEAN DEFAULT FALSE, -- هل تم تفعيل حواجز الحماية؟
+    flag_category TEXT,            -- تصنيف الخطر (Hate Speech, Deepfake, Privacy)
+    human_override_reason TEXT     -- إذا تدخل المشرف لتغيير القرار، لماذا؟
+);
+SELECT create_hypertable('audit_logs', 'timestamp', if_not_exists => TRUE);

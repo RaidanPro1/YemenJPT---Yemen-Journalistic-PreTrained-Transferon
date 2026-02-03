@@ -1,100 +1,79 @@
-import React, { useState } from 'react';
-import { presentationSlides, toolGuideData } from '../knowledgeBaseData';
+
+import React from 'react';
+import { presentationSlides } from '../knowledgeBaseData';
+import { Shield, BrainCircuit, Users, Lock, ChevronDown } from 'lucide-react';
 
 const KnowledgeBase: React.FC = () => {
-  const [activeView, setActiveView] = useState<'presentation' | 'tools'>('presentation');
-  const [selectedSlide, setSelectedSlide] = useState(presentationSlides[0]);
-
   return (
-    <div className="flex flex-col gap-8 h-full">
-      <div className="flex flex-col">
-        <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none">قاعدة المعرفة السيادية</h2>
-        <div className="flex items-center gap-3 mt-2">
-            <p className="text-[10px] font-bold text-slate-500 dark:text-brand-cyan/60 uppercase tracking-widest">YemenJPT Doctrine & Tooling Reference</p>
-        </div>
+    <div className="flex flex-col gap-10 max-w-5xl mx-auto pb-20 animate-in fade-in">
+      
+      {/* Hero Section */}
+      <div className="text-center py-10 border-b border-slate-200">
+         <div className="w-20 h-20 bg-brand-primary rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl rotate-3">
+            <Shield className="text-white" size={40} />
+         </div>
+         <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-4">قاعدة المعرفة السيادية</h2>
+         <p className="text-lg font-medium text-slate-500 max-w-2xl mx-auto leading-relaxed">
+            المنصة الأولى من نوعها للصحافة الاستقصائية اليمنية، المدعومة بذكاء اصطناعي محلي، آمن، ومتوافق مع الدستور.
+         </p>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8 min-h-0">
-        {/* Navigation Sidebar */}
-        <div className="lg:col-span-1 bg-white dark:bg-[#0f172a] p-4 rounded-xl shadow-xl overflow-y-auto custom-scrollbar flex flex-col gap-4">
-          <div className="flex bg-slate-100 dark:bg-black/20 p-1 rounded-lg">
-            <button onClick={() => setActiveView('presentation')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${activeView === 'presentation' ? 'bg-brand-cyan text-white dark:text-slate-900 shadow' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-white/5'}`}>العرض التقديمي</button>
-            <button onClick={() => setActiveView('tools')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${activeView === 'tools' ? 'bg-brand-cyan text-white dark:text-slate-900 shadow' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-white/5'}`}>دليل الأدوات</button>
-          </div>
-
-          {activeView === 'presentation' && (
-            <div className="flex flex-col gap-1">
-              {presentationSlides.map(slide => (
-                <button 
-                  key={slide.id}
-                  onClick={() => setSelectedSlide(slide)}
-                  className={`p-3 text-right rounded-lg text-xs transition-colors text-slate-700 dark:text-slate-300 flex items-center gap-3 ${selectedSlide.id === slide.id ? 'bg-brand-cyan/10 text-brand-cyan' : 'hover:bg-slate-100 dark:hover:bg-white/5'}`}
-                >
-                  <span className="bg-slate-200 dark:bg-black/30 w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center font-bold">{slide.id}</span>
-                  <span className="font-bold">{slide.title}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {activeView === 'tools' && (
-             <div className="flex flex-col gap-1">
-              {toolGuideData.map(category => (
-                <a key={category.id} href={`#${category.id}`} className="p-3 text-right rounded-lg text-xs transition-colors text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-white/5">
-                  {category.title}
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Content Viewer */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#0f172a] p-8 rounded-xl shadow-xl overflow-y-auto custom-scrollbar">
-          {activeView === 'presentation' && selectedSlide && (
-            <div className="prose dark:prose-invert max-w-none prose-headings:text-brand-cyan prose-headings:font-black prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-ul:text-slate-600 dark:prose-ul:text-slate-300 animate-in fade-in" dir="rtl">
-              <span className="text-6xl">{selectedSlide.image_icon}</span>
-              <h1>{selectedSlide.title}</h1>
-              {selectedSlide.subtitle && <p className="lead !text-slate-500 italic">{selectedSlide.subtitle}</p>}
-              <ul>
-                {selectedSlide.points.map((point, index) => <li key={index} dangerouslySetInnerHTML={{__html: point.replace(/\(([^)]+)\)/g, '<span class="text-brand-cyan/80 font-mono text-xs">($1)</span>')}}></li>)}
-              </ul>
-            </div>
-          )}
-
-          {activeView === 'tools' && (
-            <div className="space-y-12" dir="rtl">
-              {toolGuideData.map(category => (
-                <div key={category.id} id={category.id} className="scroll-mt-8 animate-in fade-in">
-                  <div className="flex items-center gap-4 mb-3">
-                    <span className="text-3xl">{category.icon}</span>
-                    <div>
-                      <h2 className="text-xl font-black text-brand-cyan">{category.title}</h2>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{category.description}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {category.tools.map(tool => (
-                      <div key={tool.name} className="bg-slate-50 dark:bg-black/20 p-5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-brand-cyan/50 hover:shadow-lg transition-all">
-                        <h4 className="font-black text-sm text-slate-800 dark:text-white">{tool.name}</h4>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">{tool.description}</p>
-                        <div className="flex items-center gap-6 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 text-[10px] font-mono text-slate-400 dark:text-brand-cyan/70">
-                          <div className="flex items-center gap-2">
-                            <span className="font-sans">👤</span>
-                            <span>المستخدم: <span className="font-bold text-slate-500 dark:text-slate-300">{tool.primary_user}</span></span>
-                          </div>
-                           <div className="flex items-center gap-2">
-                            <span className="font-sans">⚙️</span>
-                            <span>المرحلة: <span className="font-bold text-slate-500 dark:text-slate-300">{tool.workflow_step}</span></span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Core Pillars */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-md transition-all text-center">
+            <div className="w-14 h-14 bg-brand-cyan/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-brand-cyan"><Lock size={28}/></div>
+            <h3 className="font-black text-slate-900 mb-2">السيادة المطلقة</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">بياناتك لا تغادر اليمن. كافة عمليات المعالجة تتم على خوادم محلية مشفرة بتقنية AES-256.</p>
+         </div>
+         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-md transition-all text-center">
+            <div className="w-14 h-14 bg-brand-gold/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-brand-gold"><BrainCircuit size={28}/></div>
+            <h3 className="font-black text-slate-900 mb-2">ذكاء يفهمنا</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">نماذج لغوية (LLMs) تم تدريبها خصيصاً لفهم اللهجات اليمنية والسياق السياسي والاجتماعي المعقد.</p>
+         </div>
+         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-md transition-all text-center">
+            <div className="w-14 h-14 bg-brand-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-brand-primary"><Users size={28}/></div>
+            <h3 className="font-black text-slate-900 mb-2">للصحفيين فقط</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">أدوات تحقق جنائي، وتتبع OSINT، ومصادر مفتوحة محجوزة حصرياً للمحققين المعتمدين.</p>
+         </div>
       </div>
+
+      {/* Doctrine Slides (Flattened) */}
+      <div className="space-y-8">
+         <h3 className="text-2xl font-black text-slate-900 text-center uppercase tracking-widest mt-10">عقيدة المنصة</h3>
+         
+         <div className="grid grid-cols-1 gap-6">
+            {presentationSlides.map((slide, index) => (
+               <div key={slide.id} className="bg-white border border-slate-200 p-8 rounded-[2rem] flex gap-6 hover:border-brand-primary/30 transition-all">
+                  <div className="text-4xl shrink-0 bg-slate-50 w-16 h-16 flex items-center justify-center rounded-2xl">{slide.image_icon}</div>
+                  <div>
+                     <h4 className="text-lg font-black text-slate-800 mb-1">{slide.title}</h4>
+                     {slide.subtitle && <p className="text-xs font-bold text-brand-primary uppercase tracking-widest mb-3">{slide.subtitle}</p>}
+                     <ul className="space-y-2">
+                        {slide.points.map((p, i) => (
+                           <li key={i} className="text-sm text-slate-600 leading-relaxed flex items-start gap-2">
+                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></span>
+                              {p}
+                           </li>
+                        ))}
+                     </ul>
+                  </div>
+               </div>
+            ))}
+         </div>
+      </div>
+
+      {/* CTA */}
+      <div className="bg-slate-900 rounded-[3rem] p-12 text-center text-white relative overflow-hidden mt-10">
+         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-brand-primary/20 to-transparent"></div>
+         <h3 className="text-3xl font-black mb-4 relative z-10">انضم إلى مجتمع الحقيقة</h3>
+         <p className="text-slate-400 max-w-xl mx-auto mb-8 relative z-10">
+            إذا كنت صحفياً أو باحثاً يمنياً، يمكنك طلب الانضمام الآن للحصول على وصول كامل لكافة الأدوات.
+         </p>
+         <button className="px-8 py-4 bg-white text-slate-900 rounded-2xl text-sm font-black uppercase tracking-widest hover:scale-105 transition-all relative z-10">
+            تقديم طلب عضوية
+         </button>
+      </div>
+
     </div>
   );
 };

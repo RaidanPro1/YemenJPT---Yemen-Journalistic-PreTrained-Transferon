@@ -1,23 +1,44 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Sparkles, Cpu, Bot, User, ShieldCheck, Paperclip, MoreHorizontal, Copy, RotateCcw, ChevronDown, BrainCircuit } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
+import { Send, Mic, User, ShieldCheck, Paperclip, Copy, RotateCcw, ChevronDown, BrainCircuit, BookOpen, FileText, X, Bot, Lock, AlertTriangle, ExternalLink } from 'lucide-react';
+import Tooltip from './Tooltip';
 
-type Message = { id: number; text: string; sender: 'user' | 'ai' | 'system'; timestamp: string; model?: string };
+type Citation = {
+  doc: string;
+  text: string;
+  page?: number;
+};
 
-const ChatInterface: React.FC = () => {
+type Message = { 
+  id: number; 
+  text: string; 
+  sender: 'user' | 'ai' | 'system'; 
+  timestamp: string; 
+  model?: string;
+  confidence?: 'high' | 'medium' | 'low';
+  citations?: Citation[];
+  isSensitive?: boolean;
+};
+
+interface ChatInterfaceProps {
+  isPublic?: boolean;
+}
+
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPublic = false }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState({ id: 'yemenjpt-pro', name: 'YemenJPT Pro', icon: '🧠' });
+  const [selectedModel, setSelectedModel] = useState({ id: 'YemenJPT', name: 'YemenJPT', icon: '🧠' });
   const [showModelMenu, setShowModelMenu] = useState(false);
+  const [activeCitation, setActiveCitation] = useState<Citation[] | null>(null);
+  
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const models = [
-    { id: 'yemenjpt-pro', name: 'YemenJPT Pro', icon: '🧠', desc: 'التحليل المعمق والاستدلال' },
+    { id: 'YemenJPT', name: 'YemenJPT', icon: '🧠', desc: 'النواة السيادية (الدستور الأخلاقي)' },
+    { id: 'yemenjpt-pro', name: 'YemenJPT Pro', icon: '⚖️', desc: 'التحليل المعمق والاستدلال' },
     { id: 'yemenjpt-flash', name: 'YemenJPT Flash', icon: '⚡', desc: 'السرعة والتلخيص اللحظي' },
-    { id: 'yemenjpt-vision', name: 'YemenJPT Vision', icon: '👁️', desc: 'تحليل الصور والوسائط' },
-    { id: 'yemenjpt-map', name: 'YemenJPT Map', icon: '🗺️', desc: 'البيانات الجغرافية' },
+    { id: 'allam:latest', name: 'ALLAM', icon: '🇸🇦', desc: 'نموذج علام العربي' },
   ];
 
   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -30,24 +51,54 @@ const ChatInterface: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: input,
-        config: { systemInstruction: `أنت ${selectedModel.name}، ذكاء اصطناعي سيادي متخصص للصحفيين اليمنيين. قدم المعلومات بدقة جنائية وهدوء احترافي.` }
-      });
-      setMessages(prev => [...prev, { 
-        id: Date.now() + 1, 
-        text: response.text || "حدث خطأ فني.", 
-        sender: 'ai', 
-        model: selectedModel.name,
-        timestamp: new Date().toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit' }) 
-      }]);
-    } catch (e) {
-      setMessages(prev => [...prev, { id: Date.now() + 1, text: "فشل الاتصال بالنواة السيادية.", sender: 'system', timestamp: now }]);
-    } finally {
-      setIsLoading(false);
+    // Simulate Response with Ethical Checks
+    setTimeout(() => {
+        setIsLoading(false);
+        const isSensitive = input.includes("انتخابات") || input.includes("حكومة") || input.includes("فساد");
+        const isRAG = !isPublic && (Math.random() > 0.3 || isSensitive);
+        
+        let responseText = "";
+        if (isPublic) {
+            responseText = "هذه إجابة تجريبية من النموذج العام. يرجى تسجيل الدخول للحصول على تحليل معمق وموثق بالمصادر.";
+        } else if (isSensitive) {
+             responseText = "بناءً على بروتوكول النزاهة (Election Integrity)، تم حصر الإجابة في الحقائق الموثقة فقط. تشير البيانات السيادية إلى...";
+        } else {
+             responseText = "بناءً على الأرشيف السيادي، تشير الوثائق إلى أن...";
+        }
+        
+        const citations = isRAG ? [
+            { doc: "الدستور اليمني (المادة 42)", text: "تكفل الدولة حرية الفكر والإعراب عن الرأي...", page: 12 },
+            { doc: "تقرير لجنة الانتخابات 2014", text: "إحصائيات التسجيل الانتخابي في المحافظات...", page: 5 }
+        ] : [];
+
+        setMessages(prev => [...prev, { 
+            id: Date.now() + 1, 
+            text: responseText, 
+            sender: 'ai', 
+            model: selectedModel.name,
+            timestamp: new Date().toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit' }),
+            confidence: isSensitive ? 'medium' : 'high',
+            citations: citations,
+            isSensitive: isSensitive
+        }]);
+    }, 1500);
+  };
+
+  const getConfidenceColor = (level?: string) => {
+    switch(level) {
+      case 'high': return 'bg-emerald-500';
+      case 'medium': return 'bg-amber-500';
+      case 'low': return 'bg-rose-500';
+      default: return 'bg-slate-300';
+    }
+  };
+
+  const getConfidenceLabel = (level?: string) => {
+    switch(level) {
+        case 'high': return 'موثوقية عالية';
+        case 'medium': return 'متوسطة - تحقق';
+        case 'low': return 'منخفضة - غير مؤكد';
+        default: return 'غير محدد';
     }
   };
 
@@ -57,19 +108,21 @@ const ChatInterface: React.FC = () => {
       {/* Top Model Selector Bar */}
       <header className="h-16 flex items-center justify-between px-8 border-b border-brand-border bg-white/50 backdrop-blur z-30">
         <div className="relative">
-           <button 
-             onClick={() => setShowModelMenu(!showModelMenu)}
-             className="flex items-center gap-3 px-4 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-100"
-           >
-              <span className="text-lg">{selectedModel.icon}</span>
-              <div className="text-right">
-                 <p className="text-xs font-black text-slate-800 leading-tight">{selectedModel.name}</p>
-                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Active Engine</p>
-              </div>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform ${showModelMenu ? 'rotate-180' : ''}`} />
-           </button>
+           <Tooltip text={isPublic ? "متاح فقط للأعضاء المسجلين" : "تغيير المحرك الذكي"}>
+             <button 
+               onClick={() => !isPublic && setShowModelMenu(!showModelMenu)}
+               className={`flex items-center gap-3 px-4 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-100 ${isPublic ? 'opacity-70 cursor-not-allowed' : ''}`}
+             >
+                <span className="text-lg">{selectedModel.icon}</span>
+                <div className="text-right">
+                   <p className="text-xs font-black text-slate-800 leading-tight">{selectedModel.name}</p>
+                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{isPublic ? 'Public Mode' : 'Active Sovereign Engine'}</p>
+                </div>
+                {!isPublic && <ChevronDown size={14} className={`text-slate-400 transition-transform ${showModelMenu ? 'rotate-180' : ''}`} />}
+             </button>
+           </Tooltip>
 
-           {showModelMenu && (
+           {showModelMenu && !isPublic && (
              <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-brand-border rounded-2xl shadow-xl z-50 p-2 animate-in fade-in zoom-in-95">
                 {models.map(m => (
                   <button
@@ -89,9 +142,15 @@ const ChatInterface: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
+           {isPublic && (
+               <div className="px-3 py-1 bg-slate-100 rounded-full border border-slate-200 flex items-center gap-2">
+                  <Lock size={12} className="text-slate-400"/>
+                  <span className="text-[9px] font-black text-slate-500 uppercase">تجربة محدودة</span>
+               </div>
+           )}
            <div className="px-3 py-1 bg-brand-primary/5 rounded-full border border-brand-primary/10 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse"></span>
-              <span className="text-[9px] font-black text-brand-primary uppercase">Encrypted</span>
+              <span className="text-[9px] font-black text-brand-primary uppercase">Local & Encrypted</span>
            </div>
         </div>
       </header>
@@ -106,19 +165,11 @@ const ChatInterface: React.FC = () => {
                </div>
                <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">مرحباً بك في YemenJPT</h2>
                <p className="text-slate-400 text-sm max-w-sm font-medium leading-relaxed">
-                 أنت متصل بمحرك <span className="text-brand-primary font-bold">{selectedModel.name}</span>. اسأل عن أي وثيقة أو اطلب تحليل بيانات استقصائية.
+                 {isPublic 
+                    ? "أنت في الوضع العام. يمكنك طرح أسئلة عامة، لكن أدوات التحقق والأرشيف السيادي متاحة فقط للصحفيين المسجلين." 
+                    : `أنت متصل بمحرك ${selectedModel.name}. النظام يلتزم بالدستور الأخلاقي: مكافحة العنف، نزاهة الانتخابات، والسيادة الرقمية.`
+                 }
                </p>
-               
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-12 w-full max-w-xl">
-                  {[
-                    "لخص مخرجات الحوار الوطني", "رصد تحركات السفن في الحديدة",
-                    "تحليل صورة مشبوهة جنائياً", "كشف تلاعب في فيديو ميداني"
-                  ].map(q => (
-                    <button key={q} onClick={() => setInput(q)} className="p-4 bg-white rounded-2xl border border-brand-border hover:border-brand-primary/30 text-right group transition-all text-xs font-bold text-slate-600 hover:text-brand-primary">
-                       {q}
-                    </button>
-                  ))}
-               </div>
             </div>
           ) : (
             messages.map(msg => (
@@ -128,16 +179,44 @@ const ChatInterface: React.FC = () => {
                  </div>
                  
                  <div className="flex flex-col gap-2 max-w-[85%] group">
-                    <div className={`p-5 rounded-2xl leading-relaxed text-sm ${msg.sender === 'user' ? 'bg-brand-primary text-white shadow-soft' : 'bg-[#f0f2f5] text-slate-800'}`}>
+                    {msg.isSensitive && (
+                        <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-[10px] font-black mb-1 w-fit">
+                            <AlertTriangle size={12} />
+                            <span>موضوع حساس/سياسي: تم تفعيل وضع التدقيق الصارم (Strict Mode)</span>
+                        </div>
+                    )}
+                    <div className={`relative p-5 rounded-2xl leading-relaxed text-sm ${msg.sender === 'user' ? 'bg-brand-primary text-white shadow-soft' : 'bg-[#f0f2f5] text-slate-800'}`}>
                        <div className="whitespace-pre-wrap">{msg.text}</div>
+                       
+                       {msg.sender === 'ai' && !isPublic && (
+                         <div className="absolute top-4 right-[-14px] h-[calc(100%-32px)] w-1 rounded-full bg-slate-200 overflow-hidden" title={`مستوى الثقة: ${getConfidenceLabel(msg.confidence)}`}>
+                            <div className={`w-full h-full ${getConfidenceColor(msg.confidence)} opacity-80`}></div>
+                         </div>
+                       )}
                     </div>
                     
+                    {msg.sender === 'ai' && !isPublic && (
+                       <div className="flex items-center gap-2">
+                            {msg.citations && msg.citations.length > 0 && (
+                                <button 
+                                    onClick={() => setActiveCitation(msg.citations || null)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-slate-500 hover:text-brand-primary hover:border-brand-primary transition-all shadow-sm"
+                                >
+                                    <ShieldCheck size={12} /> المصادر المرجعية ({msg.citations.length})
+                                </button>
+                            )}
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-bold text-slate-400">
+                                <span className={`w-1.5 h-1.5 rounded-full ${getConfidenceColor(msg.confidence)}`}></span>
+                                {getConfidenceLabel(msg.confidence)}
+                            </div>
+                       </div>
+                    )}
+
                     <div className={`flex items-center gap-4 px-1 opacity-0 group-hover:opacity-100 transition-opacity ${msg.sender === 'user' ? 'justify-end' : ''}`}>
                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{msg.timestamp} {msg.model && `• ${msg.model}`}</span>
                        <div className="flex items-center gap-2">
-                          <button className="p-1.5 text-slate-400 hover:text-brand-primary transition-colors rounded-lg hover:bg-slate-100"><Copy size={12} /></button>
-                          <button className="p-1.5 text-slate-400 hover:text-brand-primary transition-colors rounded-lg hover:bg-slate-100"><RotateCcw size={12} /></button>
-                          <button className="p-1.5 text-slate-400 hover:text-brand-primary transition-colors rounded-lg hover:bg-slate-100"><MoreHorizontal size={12} /></button>
+                          <Tooltip text="نسخ النص"><button className="p-1.5 text-slate-400 hover:text-brand-primary transition-colors rounded-lg hover:bg-slate-100"><Copy size={12} /></button></Tooltip>
+                          <Tooltip text="إعادة التوليد"><button className="p-1.5 text-slate-400 hover:text-brand-primary transition-colors rounded-lg hover:bg-slate-100"><RotateCcw size={12} /></button></Tooltip>
                        </div>
                     </div>
                  </div>
@@ -148,22 +227,57 @@ const ChatInterface: React.FC = () => {
         </div>
       </div>
 
+      {/* RAG Verification Modal (Citation Widget) */}
+      {activeCitation && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in" onClick={() => setActiveCitation(null)}>
+           <div className="bg-white rounded-[2rem] p-8 max-w-lg w-full shadow-2xl border border-slate-100" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                 <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <BookOpen size={20} className="text-brand-primary" /> المصادر المرجعية (Citation Widget)
+                 </h3>
+                 <button onClick={() => setActiveCitation(null)} className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 transition-all"><X size={18} className="text-slate-400" /></button>
+              </div>
+              <p className="text-[10px] text-slate-500 mb-4 font-medium">تم استناد الإجابة إلى الوثائق التالية من قاعدة المعرفة السيادية (Media Literacy Proof):</p>
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                 {activeCitation.map((cite, i) => (
+                   <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-brand-primary/30 transition-all group">
+                      <div className="flex items-center justify-between mb-2">
+                         <span className="text-[10px] font-black text-brand-primary uppercase flex items-center gap-1">
+                            <FileText size={12} /> {cite.doc}
+                         </span>
+                         {cite.page && <span className="text-[9px] font-mono text-slate-400">صـ {cite.page}</span>}
+                      </div>
+                      <p className="text-xs font-bold text-slate-600 leading-relaxed italic border-r-2 border-slate-200 pr-3">"{cite.text}"</p>
+                      <button className="mt-3 text-[9px] text-brand-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <ExternalLink size={10} /> فتح الوثيقة الأصلية
+                      </button>
+                   </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+      )}
+
       {/* Input Area */}
       <div className="px-6 pb-8 pt-2 z-20">
          <div className="max-w-3xl mx-auto">
-            <div className="bg-[#f0f2f5] rounded-3xl p-2 focus-within:bg-white focus-within:shadow-2xl focus-within:ring-1 focus-within:ring-brand-primary/10 transition-all border border-transparent focus-within:border-brand-border">
+            <div className={`bg-[#f0f2f5] rounded-3xl p-2 transition-all border border-transparent ${isPublic ? 'opacity-80' : 'focus-within:bg-white focus-within:shadow-2xl focus-within:ring-1 focus-within:ring-brand-primary/10 focus-within:border-brand-border'}`}>
                <textarea 
                  value={input}
                  onChange={(e) => setInput(e.target.value)}
                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), onSend())}
-                 placeholder={`تحدث مع ${selectedModel.name}...`}
+                 placeholder={isPublic ? "اسأل سؤالاً عاماً..." : `تحدث مع ${selectedModel.name} (مدعوم بالميثاق الأخلاقي)...`}
                  className="w-full bg-transparent px-4 py-3 text-sm text-slate-800 outline-none resize-none h-14 min-h-[56px] custom-scrollbar"
                />
                
                <div className="flex items-center justify-between px-2 pb-1">
                   <div className="flex items-center gap-1">
-                     <button className="p-2 text-slate-400 hover:text-brand-primary hover:bg-white rounded-xl transition-all"><Paperclip size={18} /></button>
-                     <button className="p-2 text-slate-400 hover:text-brand-primary hover:bg-white rounded-xl transition-all"><Mic size={18} /></button>
+                     <Tooltip text={isPublic ? "غير متاح للعامة" : "إرفاق ملف"}>
+                        <button disabled={isPublic} className={`p-2 rounded-xl transition-all ${isPublic ? 'text-slate-300 cursor-not-allowed' : 'text-slate-400 hover:text-brand-primary hover:bg-white'}`}><Paperclip size={18} /></button>
+                     </Tooltip>
+                     <Tooltip text={isPublic ? "غير متاح للعامة" : "تسجيل صوتي"}>
+                        <button disabled={isPublic} className={`p-2 rounded-xl transition-all ${isPublic ? 'text-slate-300 cursor-not-allowed' : 'text-slate-400 hover:text-brand-primary hover:bg-white'}`}><Mic size={18} /></button>
+                     </Tooltip>
                   </div>
                   <button 
                     onClick={onSend}
@@ -174,7 +288,7 @@ const ChatInterface: React.FC = () => {
                   </button>
                </div>
             </div>
-            <p className="text-[10px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest italic">YemenJPT Sovereignty Node • Local & Encrypted</p>
+            <p className="text-[10px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest italic">YemenJPT Sovereignty Node • Ethical AI Enforced</p>
          </div>
       </div>
     </div>

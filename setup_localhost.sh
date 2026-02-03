@@ -1,56 +1,62 @@
 
 #!/bin/bash
-# RaidanPro / YemenJPT Localhost Setup for Ubuntu 24.04 LTS
-# Full Stack Installation: FastAPI + React + Ollama + RAG Dependencies
+# YemenJPT Localhost Setup Script v8.1
+# Ubuntu 24.04 LTS Compatible
 
 set -e
 
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+echo "🔵 --- YemenJPT Sovereign Node Setup ---"
 
-echo -e "${CYAN}--- YEMENJPT SOVEREIGN NODE SETUP v8.0 ---${NC}"
+# 1. Install System Dependencies
+echo "🔵 [1/5] Installing System Dependencies (Docker, Python, Node.js)..."
+sudo apt update
+sudo apt install -y curl git jq docker.io docker-compose-v2 python3-pip python3-venv build-essential ffmpeg libmagic1
 
-echo -e "${BLUE}[1/6] Installing System Core...${NC}"
-sudo apt update && sudo apt install -y curl git jq docker.io docker-compose-v2 python3-pip python3-venv build-essential ffmpeg libmagic1
+# Install Node.js (via nvm or direct)
+if ! command -v npm &> /dev/null; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt install -y nodejs
+fi
 
-echo -e "${BLUE}[2/6] Setting up Python Virtual Environment...${NC}"
+# 2. Backend Setup
+echo "🔵 [2/5] Setting up Python Backend..."
 python3 -m venv venv
 source venv/bin/activate
-pip install --upgrade pip
 pip install -r backend/requirements.txt
 
-echo -e "${BLUE}[3/6] Configuring Sovereign AI (Ollama)...${NC}"
+# 3. AI Model Setup
+echo "🔵 [3/5] Configuring Constitutional AI (Ollama)..."
 if ! command -v ollama &> /dev/null; then
     curl -fsSL https://ollama.com/install.sh | sh
 fi
 
-# Ensure Ollama is running
+# Start Ollama if not running
 if ! pgrep -x "ollama" > /dev/null; then
     ollama serve > /dev/null 2>&1 &
-    echo "Waiting for Ollama to warm up..."
+    echo "   ...Waiting for Ollama to initialize..."
     sleep 10
 fi
 
-echo -e "${BLUE}[4/6] Pulling Language Models...${NC}"
-ollama pull allam:latest
-ollama pull qwen2.5:7b
+# Pull base model
+ollama pull llama3
 
-echo -e "${BLUE}[5/6] Initializing Knowledge Base (RAG)...${NC}"
-# Pre-creating data directories
-mkdir -p backend/data backend/uploads shared-uploads
-# The AI Router will auto-build embeddings on first boot
+# Create Custom Constitutional Model
+if [ -f "models/Modelfile.YemenJPT" ]; then
+    echo "   Creating 'YemenJPT' from Modelfile..."
+    ollama create YemenJPT -f models/Modelfile.YemenJPT
+else
+    echo "⚠️ Warning: models/Modelfile.YemenJPT not found."
+fi
 
-echo -e "${BLUE}[6/6] Launching Docker Infrastructure...${NC}"
-docker compose -f docker-compose.stack.yml up -d
+# 4. Frontend Setup
+echo "🔵 [4/5] Installing Frontend Dependencies..."
+npm install
 
-echo -e "${GREEN}✅ YemenJPT Sovereign Node is fully deployed!${NC}"
-echo -e "--------------------------------------------------"
-echo -e "🔗 Main Dashboard: http://localhost:80"
-echo -e "🧠 AI Engine: http://localhost:11434 (Default: CPU Mode)"
-echo -e "🛠️ API Gateway: http://localhost:8000"
-echo -e "📓 Jupyter Lab: http://localhost:8888"
-echo -e "--------------------------------------------------"
-echo -e "Admin User: info@raidan.pro"
-echo -e "Default Master Key: samah@2052024"
+# 5. Launch Instructions
+echo "🔵 [5/5] Setup Complete!"
+echo ""
+echo "🚀 TO START THE PLATFORM:"
+echo "1. Start Backend:  source venv/bin/activate && cd backend && uvicorn main:app --reload"
+echo "2. Start Frontend: npm run dev"
+echo ""
+echo "Access the dashboard at: http://localhost:3000"

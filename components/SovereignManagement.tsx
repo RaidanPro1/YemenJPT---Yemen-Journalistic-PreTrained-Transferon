@@ -4,7 +4,7 @@ import RootAuthGuard from './RootAuthGuard';
 import ToolCard from './ToolCard';
 import { TOOLS_LIST } from '../constants';
 import { Tool, ToolCategory } from '../types';
-import { ShieldCheck, activity, LayoutGrid, Terminal as TerminalIcon, Info, Server, Activity as ActivityIcon } from 'lucide-react';
+import { ShieldCheck, LayoutGrid, Terminal as TerminalIcon, Info, Server, Activity as ActivityIcon, FileText, AlertTriangle, User, Clock, CheckCircle, ShieldAlert, Gavel, Flag } from 'lucide-react';
 
 interface Container {
   id: string;
@@ -20,6 +20,18 @@ interface HealthStatus {
   message: string;
 }
 
+interface AuditLog {
+  id: number;
+  user: string;
+  timestamp: string;
+  prompt: string;
+  response: string;
+  safetyFlag: boolean;
+  flagCategory?: string;
+  overrideReason?: string;
+  status: 'active' | 'appealed' | 'resolved';
+}
+
 const SovereignManagementContent: React.FC<{ authToken: string }> = ({ authToken }) => {
   const [containers, setContainers] = useState<Container[]>([]);
   const [selectedContainer, setSelectedContainer] = useState<Container | null>(null);
@@ -27,8 +39,56 @@ const SovereignManagementContent: React.FC<{ authToken: string }> = ({ authToken
   const [modalTab, setModalTab] = useState<'logs' | 'details'>('logs');
   const [healthStatuses, setHealthStatuses] = useState<HealthStatus[]>([]);
   const [hestiaStats, setHestiaStats] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'infrastructure' | 'tools'>('infrastructure');
+  const [activeTab, setActiveTab] = useState<'infrastructure' | 'tools' | 'compliance'>('infrastructure');
   const logIntervalRef = useRef<number | null>(null);
+
+  // Mock Data for Audit Logs (Simulating DB retrieval)
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([
+    { 
+      id: 1042, 
+      user: 'Ahmed Investigator', 
+      timestamp: '10:42 AM', 
+      prompt: 'تحليل البيانات المالية لشركة "الاستيراد السريع" وتتبع الملاك.', 
+      response: 'تم العثور على 3 شركات واجهة مرتبطة...', 
+      safetyFlag: false,
+      status: 'active'
+    },
+    { 
+      id: 1043, 
+      user: 'Anonymous_User_02', 
+      timestamp: '11:15 AM', 
+      prompt: 'إنشاء فيديو مفبرك لمرشح سياسي يظهر في وضع مخل.', 
+      response: '[BLOCKED] عذراً، هذا الطلب ينتهك معايير المجتمع الآمن.', 
+      safetyFlag: true,
+      flagCategory: 'Deepfake Generation',
+      status: 'active'
+    },
+    { 
+      id: 1044, 
+      user: 'Lead Admin', 
+      timestamp: '11:30 AM', 
+      prompt: 'استخراج السجل الجنائي للمدعو (س.ع.ص) لأغراض التحقيق.', 
+      response: '[SENSITIVE DATA RELEASED]', 
+      safetyFlag: true,
+      flagCategory: 'Privacy Violation',
+      overrideReason: 'أمر قضائي رقم 442/2024 - وحدة التحقيقات',
+      status: 'resolved'
+    },
+    { 
+      id: 1045, 
+      user: 'Sarah Field', 
+      timestamp: '12:05 PM', 
+      prompt: 'تلخيص تقرير الأمم المتحدة حول الأمن الغذائي.', 
+      response: 'يشير التقرير إلى تدهور حاد في...', 
+      safetyFlag: false,
+      status: 'active'
+    },
+  ]);
+
+  const handleAppeal = (id: number) => {
+      setAuditLogs(prev => prev.map(log => log.id === id ? { ...log, status: 'appealed' } : log));
+      addHealthStatus('success', `تم رفع طلب استئناف للسجل #${id} بنجاح.`);
+  };
 
   const controlPanels = [
       { name: 'Traefik Gateway', description: 'إدارة توجيه الشبكة والشهادات.', icon: '🌐', containerName: 'YJPT_gateway', url: 'http://localhost:8081' },
@@ -158,6 +218,12 @@ const SovereignManagementContent: React.FC<{ authToken: string }> = ({ authToken
         >
           حوكمة الأدوات
         </button>
+        <button 
+          onClick={() => setActiveTab('compliance')}
+          className={`pb-4 text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'compliance' ? 'text-brand-primary border-b-2 border-brand-primary' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          <Gavel size={14} /> سجل الامتثال
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
@@ -230,6 +296,107 @@ const SovereignManagementContent: React.FC<{ authToken: string }> = ({ authToken
                   </tbody>
                 </table>
             </div>
+          </div>
+        ) : activeTab === 'compliance' ? (
+          <div className="space-y-8 animate-in fade-in duration-300">
+             <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-soft flex flex-col gap-6">
+                <div className="flex items-center gap-4 border-b border-slate-50 pb-6">
+                   <div className="p-3 bg-brand-primary/5 rounded-2xl text-brand-primary border border-brand-primary/10">
+                      <ShieldAlert size={24} />
+                   </div>
+                   <div>
+                      <h3 className="text-lg font-black text-slate-900">سجل الرقابة والتدقيق (Audit Log)</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">تتبع التجاوزات والتدخلات البشرية في النظام</p>
+                   </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                   <table className="w-full text-right border-collapse">
+                      <thead>
+                         <tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <th className="p-5 rounded-r-2xl">المستخدم</th>
+                            <th className="p-5">التوقيت</th>
+                            <th className="p-5 w-1/3">نص الطلب (Prompt)</th>
+                            <th className="p-5">حالة الأمان</th>
+                            <th className="p-5">تبرير التجاوز</th>
+                            <th className="p-5 rounded-l-2xl">الإجراءات</th>
+                         </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                         {auditLogs.map(log => (
+                            <tr key={log.id} className={`group transition-all ${log.safetyFlag ? (log.overrideReason ? 'bg-amber-50/50 hover:bg-amber-50' : 'bg-red-50/30 hover:bg-red-50/50') : 'hover:bg-slate-50'}`}>
+                               <td className="p-5">
+                                  <div className="flex items-center gap-3">
+                                     <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 text-xs shadow-sm">
+                                        <User size={14} />
+                                     </div>
+                                     <span className="text-xs font-bold text-slate-700">{log.user}</span>
+                                  </div>
+                               </td>
+                               <td className="p-5">
+                                  <div className="flex items-center gap-2 text-slate-500">
+                                     <Clock size={12} />
+                                     <span className="text-[10px] font-mono font-bold">{log.timestamp}</span>
+                                  </div>
+                               </td>
+                               <td className="p-5">
+                                  <p className="text-xs font-medium text-slate-600 line-clamp-2" title={log.prompt}>
+                                     {log.prompt}
+                                  </p>
+                                  {log.flagCategory && (
+                                     <span className="inline-block mt-1 px-2 py-0.5 rounded bg-red-100 text-red-600 text-[8px] font-black uppercase border border-red-200">
+                                        {log.flagCategory}
+                                     </span>
+                                  )}
+                               </td>
+                               <td className="p-5">
+                                  {log.safetyFlag ? (
+                                     log.overrideReason ? (
+                                        <div className="flex items-center gap-2 text-amber-600">
+                                           <AlertTriangle size={14} />
+                                           <span className="text-[9px] font-black uppercase">تدخل بشري</span>
+                                        </div>
+                                     ) : (
+                                        <div className="flex items-center gap-2 text-red-600">
+                                           <ShieldAlert size={14} />
+                                           <span className="text-[9px] font-black uppercase">تم الحظر</span>
+                                        </div>
+                                     )
+                                  ) : (
+                                     <div className="flex items-center gap-2 text-green-600">
+                                        <CheckCircle size={14} />
+                                        <span className="text-[9px] font-black uppercase">آمن</span>
+                                     </div>
+                                  )}
+                               </td>
+                               <td className="p-5">
+                                  {log.overrideReason ? (
+                                     <div className="p-2 bg-white/60 border border-amber-200 rounded-lg">
+                                        <p className="text-[9px] font-bold text-amber-800 italic">"{log.overrideReason}"</p>
+                                     </div>
+                                  ) : (
+                                     <span className="text-slate-300 text-xs">-</span>
+                                  )}
+                               </td>
+                               <td className="p-5">
+                                   {log.safetyFlag && !log.overrideReason && log.status !== 'appealed' && (
+                                       <button 
+                                        onClick={() => handleAppeal(log.id)}
+                                        className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-slate-500 hover:text-brand-primary hover:border-brand-primary transition-all shadow-sm flex items-center gap-1"
+                                       >
+                                           <Flag size={10} /> استئناف (Appeal)
+                                       </button>
+                                   )}
+                                   {log.status === 'appealed' && (
+                                       <span className="text-[9px] font-bold text-brand-gold uppercase tracking-widest">قيد المراجعة</span>
+                                   )}
+                               </td>
+                            </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                </div>
+             </div>
           </div>
         ) : (
           <div className="space-y-10 animate-in fade-in duration-300">

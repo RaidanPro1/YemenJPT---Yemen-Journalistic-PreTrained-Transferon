@@ -39,7 +39,7 @@ class VoiceRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     prompt: str
-    model_name: str = "allam:latest"
+    model_name: str = "YemenJPT"
 
 # --- ENDPOINTS ---
 

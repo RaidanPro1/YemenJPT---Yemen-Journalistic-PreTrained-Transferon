@@ -44,8 +44,11 @@ const InvestigationsDashboard: React.FC = () => {
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!preview) return;
-    setIsPanning(true);
-    setStartPan({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    // Allow panning with right mouse button (button 2)
+    if (e.button === 2) {
+      setIsPanning(true);
+      setStartPan({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -170,7 +173,8 @@ const InvestigationsDashboard: React.FC = () => {
                  onMouseMove={handleMouseMove}
                  onMouseUp={handleMouseUp}
                  onMouseLeave={() => { handleMouseUp(); setTooltip(prev => ({ ...prev, visible: false })); }}
-                 className={`flex-1 bg-slate-50 rounded-[3rem] border border-slate-200 relative overflow-hidden flex items-center justify-center shadow-inner transition-all duration-300 ${preview ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+                 onContextMenu={(e) => e.preventDefault()}
+                 className={`flex-1 bg-slate-50 rounded-[3rem] border border-slate-200 relative overflow-hidden flex items-center justify-center shadow-inner transition-all duration-300 ${preview ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
                >
                   {/* Grid overlay */}
                   <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#007aff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>

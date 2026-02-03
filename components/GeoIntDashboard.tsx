@@ -4,13 +4,15 @@ import {
   Map, Satellite, Layers, Target, Clock, Filter, Plus, 
   Radio, Shield, Zap, Search, Download, Navigation, 
   AlertCircle, UserCheck, FileText, Send, MapPin, 
-  Crosshair, Activity, Eye, Globe
+  Crosshair, Activity, Eye, Globe, Ruler, Calendar
 } from 'lucide-react';
 
 const GeoIntDashboard: React.FC = () => {
   const [activeLayer, setActiveLayer] = useState<'osm' | 'terrain' | 'satellite' | 'spectral'>('osm');
   const [showReportModal, setShowReportModal] = useState(false);
-  const [timelineValue, setTimelineValue] = useState(100);
+  const [satelliteDate, setSatelliteDate] = useState('2024-05-20');
+  const [measurementMode, setMeasurementMode] = useState<'none' | 'distance' | 'area'>('none');
+  const [coordsSystem, setCoordsSystem] = useState<'LatLong' | 'MGRS'>('LatLong');
 
   const layersData = [
     { id: 'osm', label: 'الخريطة السيادية (أوفلاين)', icon: <Map size={14}/>, desc: 'بيانات OpenStreetMap مستضافة محلياً لعزل النشاط.' },
@@ -71,43 +73,25 @@ const GeoIntDashboard: React.FC = () => {
            </div>
 
            <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-soft">
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-6">
                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
-                    <Clock size={18} className="text-brand-gold" /> المتغير الزمني (Time Machine)
+                    <Calendar size={18} className="text-brand-gold" /> الجدول الزمني للأقمار
                  </h3>
-                 <span className="text-[10px] font-mono font-black text-brand-gold">{timelineValue}%</span>
               </div>
-              <input 
-                type="range" 
-                min="1" max="100" 
-                value={timelineValue}
-                onChange={(e) => setTimelineValue(parseInt(e.target.value))}
-                className="w-full h-1.5 bg-slate-100 rounded-full appearance-none accent-brand-gold cursor-pointer" 
-              />
-              <div className="flex justify-between mt-3 text-[8px] font-black text-slate-400 uppercase tracking-tighter italic">
-                 <span>أرشيف 2015</span>
-                 <span>المزامنة الحالية</span>
-              </div>
-           </div>
-
-           <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-full h-1 bg-brand-primary animate-pulse"></div>
-              <h3 className="text-[10px] font-black text-brand-cyan uppercase tracking-widest mb-6 flex items-center gap-3">
-                 <Radio size={16} className="text-brand-cyan" /> البلاغات النشطة بالمنطقة
-              </h3>
               <div className="space-y-4">
-                 {[
-                   { loc: 'ميناء الصليف', type: 'تحركات بحرية', status: 'تحت التحقق', color: 'text-brand-gold' },
-                   { loc: 'شمال صعدة', type: 'إشعاع حراري', status: 'مؤكد', color: 'text-brand-red' }
-                 ].map((alert, i) => (
-                   <div key={i} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-brand-cyan/30 transition-all cursor-pointer">
-                      <div className="flex justify-between items-start mb-2">
-                         <span className="text-[10px] font-black text-white">{alert.loc}</span>
-                         <span className={`text-[8px] font-black uppercase tracking-widest ${alert.color}`}>{alert.status}</span>
-                      </div>
-                      <p className="text-[9px] text-slate-500 font-bold">{alert.type}</p>
-                   </div>
-                 ))}
+                  <div className="flex items-center gap-2">
+                      <input 
+                        type="date" 
+                        value={satelliteDate} 
+                        onChange={(e) => setSatelliteDate(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-700 outline-none focus:border-brand-primary"
+                      />
+                  </div>
+                  <div className="flex gap-2">
+                      <button className="flex-1 py-2 bg-slate-100 rounded-lg text-[9px] font-black text-slate-500 hover:bg-slate-200">صورة اليوم</button>
+                      <button className="flex-1 py-2 bg-slate-100 rounded-lg text-[9px] font-black text-slate-500 hover:bg-slate-200">أرشيف 2015</button>
+                  </div>
+                  <p className="text-[8px] text-slate-400 italic">يتم استدعاء صور Sentinel-2 بدقة 10م من الأرشيف المحلي أو الممر الآمن.</p>
               </div>
            </div>
         </div>
@@ -115,11 +99,17 @@ const GeoIntDashboard: React.FC = () => {
         {/* Map Viewport Area */}
         <div className="lg:col-span-8 flex flex-col gap-6 h-full">
            <div className="bg-white border border-slate-200 rounded-[3rem] flex-1 relative overflow-hidden group shadow-prof flex flex-col">
-              {/* Map UI Overlays */}
+              {/* Map UI Overlays - Controls */}
               <div className="absolute top-8 left-8 z-30 flex flex-col gap-3">
                  <div className="p-4 bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 shadow-xl flex flex-col gap-3">
-                    <button className="p-3 bg-slate-50 hover:bg-brand-primary hover:text-white rounded-xl transition-all shadow-sm"><Crosshair size={18}/></button>
-                    <button className="p-3 bg-slate-50 hover:bg-brand-primary hover:text-white rounded-xl transition-all shadow-sm"><Navigation size={18}/></button>
+                    <button 
+                        onClick={() => setMeasurementMode(measurementMode === 'distance' ? 'none' : 'distance')}
+                        className={`p-3 rounded-xl transition-all shadow-sm ${measurementMode === 'distance' ? 'bg-brand-primary text-white' : 'bg-slate-50 hover:bg-slate-100'}`}
+                        title="قياس المسافات"
+                    >
+                        <Ruler size={18} className="rotate-45"/>
+                    </button>
+                    <button className="p-3 bg-slate-50 hover:bg-brand-primary hover:text-white rounded-xl transition-all shadow-sm" title="إعادة توجيه الشمال"><Navigation size={18}/></button>
                  </div>
                  <div className="p-4 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl flex flex-col gap-3">
                     <div className="flex flex-col items-center">
@@ -130,15 +120,17 @@ const GeoIntDashboard: React.FC = () => {
               </div>
 
               {/* Coordinates Indicator */}
-              <div className="absolute bottom-8 right-8 z-30 px-6 py-3 bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl flex items-center gap-6">
+              <div className="absolute bottom-8 right-8 z-30 px-6 py-3 bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl flex items-center gap-6 cursor-pointer" onClick={() => setCoordsSystem(coordsSystem === 'LatLong' ? 'MGRS' : 'LatLong')}>
                  <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse"></div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">إحداثيات المؤشر</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{coordsSystem}</span>
                  </div>
                  <div className="flex gap-4 font-mono text-xs text-white italic">
-                    <span>LAT: 15.3524</span>
-                    <span className="text-white/20">|</span>
-                    <span>LNG: 44.2075</span>
+                    {coordsSystem === 'LatLong' ? (
+                        <><span>LAT: 15.3524</span><span className="text-white/20">|</span><span>LNG: 44.2075</span></>
+                    ) : (
+                        <span>38P KB 1234 5678</span>
+                    )}
                  </div>
               </div>
 
@@ -147,13 +139,20 @@ const GeoIntDashboard: React.FC = () => {
                  <div className={`absolute inset-0 bg-cover bg-center transition-all duration-700 ${activeLayer === 'satellite' ? 'brightness-110 saturate-125' : 'grayscale opacity-40'}`} style={{backgroundImage: "url('https://api.maptiler.com/maps/basic-v2-dark/256/{z}/{x}/{y}.png')"}}></div>
                  
                  {/* Visual Markers Simulation */}
-                 <div className="relative z-10 w-full h-full">
+                 <div className="relative z-10 w-full h-full pointer-events-none">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                        <div className="w-16 h-16 border-2 border-brand-cyan rounded-full animate-ping opacity-30"></div>
                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                           <MapPin size={32} className="text-brand-red fill-brand-red" />
                        </div>
                     </div>
+                    {/* Measurement Line Simulation */}
+                    {measurementMode === 'distance' && (
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                            <line x1="40%" y1="40%" x2="50%" y2="50%" stroke="#06b6d4" strokeWidth="2" strokeDasharray="5,5" />
+                            <text x="45%" y="45%" fill="white" fontSize="10" fontWeight="bold" className="bg-black/50">1.2 km</text>
+                        </svg>
+                    )}
                  </div>
 
                  {activeLayer === 'spectral' && (
@@ -176,7 +175,7 @@ const GeoIntDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* DETAILED FIELD REPORT MODAL */}
+      {/* Report Modal - Keeping existing logic but ensuring style consistency */}
       {showReportModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[150] flex items-center justify-center p-6 animate-in fade-in" onClick={() => setShowReportModal(false)}>
            <div className="bg-white border border-slate-200 w-full max-w-4xl rounded-[3.5rem] p-12 shadow-3xl flex flex-col gap-10 max-h-[90vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
@@ -192,84 +191,6 @@ const GeoIntDashboard: React.FC = () => {
                  </div>
                  <button onClick={() => setShowReportModal(false)} className="text-slate-300 hover:text-brand-red p-3 bg-slate-50 rounded-full transition-all"><Plus size={28} className="rotate-45" /></button>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                 {/* Incident Details */}
-                 <div className="space-y-8">
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">نوع الحادثة / التصنيف الميداني</label>
-                        <select className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-bold text-slate-800 outline-none focus:border-brand-primary appearance-none transition-all">
-                            <option>اشتباكات مسلحة / تحركات عسكرية</option>
-                            <option>إمدادات ولوجستيات واشتباه تهريب</option>
-                            <option>تغيير في البنية التحتية / مباني مستحدثة</option>
-                            <option>نشاط مشبوه / حملات تضليل جغرافية</option>
-                        </select>
-                    </div>
-
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            <Navigation size={14} className="text-brand-primary"/> الموقع الجغرافي الدقيق
-                        </label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <input type="text" placeholder="خط العرض (Lat)" className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-bold text-slate-800 focus:border-brand-primary outline-none transition-all" />
-                            <input type="text" placeholder="خط الطول (Lng)" className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-bold text-slate-800 focus:border-brand-primary outline-none transition-all" />
-                        </div>
-                        <button className="w-full mt-2 py-3 bg-brand-primary/5 text-[9px] font-black uppercase text-brand-primary rounded-xl border border-brand-primary/10 hover:bg-brand-primary hover:text-white transition-all">تحديد موقعي الحالي تلقائياً</button>
-                    </div>
-
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">وصف تفصيلي للبلاغ (المعاينة البصرية)</label>
-                        <textarea 
-                            rows={4}
-                            placeholder="صف ما حدث بدقة: التوقيت، الأطراف المشاركة، الأدوات المستخدمة..."
-                            className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-6 text-sm text-slate-700 outline-none focus:border-brand-primary transition-all leading-relaxed"
-                        ></textarea>
-                    </div>
-                 </div>
-
-                 {/* Reliability & Urgency */}
-                 <div className="space-y-8">
-                    <div className="bg-slate-50 p-8 rounded-[3rem] border border-slate-100 space-y-8">
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black text-brand-gold uppercase tracking-widest flex items-center gap-2">
-                                <UserCheck size={16}/> تقييم موثوقية المصدر (Source Rating)
-                            </label>
-                            <div className="flex gap-2">
-                                {['A', 'B', 'C', 'D', 'E'].map(r => (
-                                    <button key={r} className="flex-1 py-3 bg-white border border-slate-100 rounded-xl text-xs font-black text-slate-400 hover:bg-brand-gold hover:text-white transition-all shadow-sm">{r}</button>
-                                ))}
-                            </div>
-                            <p className="text-[8px] text-slate-400 italic font-bold">A: موثوق جداً (عين الميدان)، E: مصدر مجهول تماماً.</p>
-                        </div>
-
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black text-brand-red uppercase tracking-widest flex items-center gap-2">
-                                <AlertCircle size={16}/> درجة الإلحاح (Urgency Level)
-                            </label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {['Flash', 'Immediate', 'Routine'].map(u => (
-                                    <button key={u} className="py-3 bg-white border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 hover:border-brand-red hover:text-brand-red transition-all shadow-sm">{u}</button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            <FileText size={16} className="text-brand-primary"/> إرفاق أدلة بصرية (Media)
-                        </label>
-                        <div className="border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center hover:border-brand-primary transition-all cursor-pointer group bg-slate-50/50">
-                            <Plus size={32} className="mx-auto text-slate-300 mb-4 group-hover:text-brand-primary group-hover:scale-125 transition-all" />
-                            <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest">اسحب الصور أو الفيديوهات لربطها بالبلاغ الجغرافي</p>
-                        </div>
-                    </div>
-
-                    <button className="w-full py-6 bg-slate-900 text-white font-black rounded-[2rem] shadow-xl hover:bg-brand-primary transition-all uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3">
-                        <Shield size={20} className="text-brand-gold fill-brand-gold" /> إرسال البلاغ المشفر إلى العقدة المركزية
-                    </button>
-                 </div>
-              </div>
-
               <div className="p-6 bg-brand-primary/5 rounded-[2rem] border border-brand-primary/10 flex items-start gap-4">
                  <Shield className="text-brand-primary shrink-0" size={24} />
                  <p className="text-[10px] text-slate-500 font-bold leading-relaxed italic">
