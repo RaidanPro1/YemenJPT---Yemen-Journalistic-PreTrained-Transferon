@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { Shield, Mail, Lock, Building, User, Github, Twitter, Chrome, ArrowRight, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Building, User, Github, Twitter, Chrome, ArrowRight, CheckCircle, Unlock } from 'lucide-react';
+import Logo from './Logo';
 
 interface RegistrationFormProps {
   onLoginSuccess: (role: 'journalist' | 'admin') => void;
@@ -10,21 +11,17 @@ interface RegistrationFormProps {
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ onLoginSuccess, onCancel }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '', name: '', org: '', key: '' });
+  const [formData, setFormData] = useState({ email: 'preview@raidan.pro', password: '', name: '', org: '', key: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate API Check
+    // PREVIEW MODE: Bypass check for Vercel Demo
     setTimeout(() => {
         setLoading(false);
-        if (formData.email.includes('admin') || formData.key === 'root') {
-            onLoginSuccess('admin');
-        } else {
-            onLoginSuccess('journalist');
-        }
-    }, 1500);
+        onLoginSuccess('admin');
+    }, 800);
   };
 
   return (
@@ -39,8 +36,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onLoginSuccess, onC
           <div className="bg-slate-900 p-10 md:w-5/12 flex flex-col justify-between text-white relative overflow-hidden">
              <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
              <div>
-                <div className="w-12 h-12 bg-brand-primary rounded-2xl flex items-center justify-center mb-6 shadow-glow">
-                   <Shield size={24} />
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-glow">
+                   <Logo className="w-full h-full p-2" />
                 </div>
                 <h2 className="text-3xl font-black mb-2 tracking-tight">النواة السيادية</h2>
                 <p className="text-xs text-slate-400 font-medium leading-relaxed">
@@ -71,21 +68,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onLoginSuccess, onC
                 <button onClick={onCancel} className="text-slate-400 hover:text-slate-600"><ArrowRight size={20} className="rotate-180"/></button>
              </div>
 
-             <div className="flex gap-3 mb-8">
-                <button className="flex-1 py-2.5 border border-slate-200 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
-                   <Chrome size={18} className="text-slate-600" />
-                </button>
-                <button className="flex-1 py-2.5 border border-slate-200 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
-                   <Twitter size={18} className="text-blue-400" />
-                </button>
-                <button className="flex-1 py-2.5 border border-slate-200 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
-                   <Github size={18} className="text-slate-800" />
-                </button>
-             </div>
-
-             <div className="relative mb-8">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-                <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-400 font-bold">أو عبر البريد الرسمي</span></div>
+             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+                <Unlock size={20} className="text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                    <h4 className="text-xs font-black text-amber-800 mb-1">وضع المعاينة (Preview Mode)</h4>
+                    <p className="text-[10px] text-amber-700 font-bold">تم فتح جميع البوابات للمعاينة. اضغط "دخول" مباشرة دون كلمة مرور.</p>
+                </div>
              </div>
 
              <form onSubmit={handleSubmit} className="space-y-4">
@@ -131,7 +119,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onLoginSuccess, onC
                         value={formData.password}
                         onChange={e => setFormData({...formData, password: e.target.value})}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pr-9 pl-3 text-xs focus:border-brand-primary outline-none" 
-                        required 
+                        placeholder="Any password for preview..."
                       />
                    </div>
                 </div>
@@ -141,7 +129,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onLoginSuccess, onC
                   disabled={loading}
                   className="w-full py-3.5 bg-brand-primary text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg hover:bg-blue-600 transition-all flex items-center justify-center gap-2 mt-4"
                 >
-                   {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (isLogin ? 'الدخول للنواة' : 'إرسال طلب العضوية')}
+                   {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : (isLogin ? 'دخول فوري (Admin)' : 'إرسال طلب العضوية')}
                 </button>
              </form>
 

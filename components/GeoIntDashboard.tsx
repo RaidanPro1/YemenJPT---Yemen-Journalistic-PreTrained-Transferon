@@ -30,7 +30,7 @@ const GeoIntDashboard: React.FC = () => {
             <Map className="text-brand-primary w-8 h-8" /> محطة الاستقصاء الجغرافي السيادية
           </h2>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-2 italic flex items-center gap-2">
-            <Activity size={12} className="text-brand-primary animate-pulse" /> Sovereign Geospatial Reconnaissance // Node-Map-YE
+            <Activity size={12} className="text-brand-primary animate-pulse" /> Sovereign Geospatial Analysis // Node-Map-YE
           </p>
         </div>
         <div className="flex gap-3">
@@ -38,7 +38,7 @@ const GeoIntDashboard: React.FC = () => {
             onClick={() => setShowReportModal(true)}
             className="px-8 py-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
            >
-              <Plus size={18} /> إضافة بلاغ استخباراتي ميداني
+              <Plus size={18} /> إضافة معلومة ميدانية
            </button>
         </div>
       </div>
@@ -185,8 +185,8 @@ const GeoIntDashboard: React.FC = () => {
                        <Send size={28} />
                     </div>
                     <div>
-                       <h3 className="text-3xl font-black text-slate-900 tracking-tighter">إرسال بلاغ استخباراتي ميداني</h3>
-                       <p className="text-[10px] text-brand-primary mt-1 uppercase tracking-[0.4em] font-black italic">Field Intelligence Network (FIN) Protocol</p>
+                       <h3 className="text-3xl font-black text-slate-900 tracking-tighter">إرسال بلاغ ميداني</h3>
+                       <p className="text-[10px] text-brand-primary mt-1 uppercase tracking-[0.4em] font-black italic">Field Reporting Network (FRN) Protocol</p>
                     </div>
                  </div>
                  <button onClick={() => setShowReportModal(false)} className="text-slate-300 hover:text-brand-red p-3 bg-slate-50 rounded-full transition-all"><Plus size={28} className="rotate-45" /></button>

@@ -1,120 +1,165 @@
+
 version: '3.8'
 
 networks:
-  raidan_net:
+  sovereign_net:
     driver: bridge
 
+volumes:
+  db_data:
+  minio_data:
+  qdrant_data:
+  ollama_data:
+  n8n_data:
+  letsencrypt:
+
 services:
-  # Gateway - Main API Entrance
-  gateway:
-    build: ./gateway
-    container_name: YJPT_Gateway
+  # --- REVERSE PROXY (TRAEFIK) ---
+  traefik:
+    image: traefik:v2.10
+    container_name: yemenjpt_traefik
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=admin@ai.ph-ye.org" # Changed to generic admin email
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
-      - "8000:8000"
-    env_file: .env
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
-      - raidan_net
+      - sovereign_net
     restart: always
 
-  # NLP Engine - MARBERT Sentiment Analysis
-  nlp-engine:
-    build: ./nlp-engine
-    container_name: YJPT_NLP
-    ports:
-      - "8001:8001"
-    env_file: .env
+  # --- FRONTEND (React/Nginx) ---
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: yemenjpt_frontend
+    labels:
+      - "traefik.enable=true"
+      # Main Domain Rule
+      - "traefik.http.routers.frontend.rule=Host(`ai.ph-ye.org`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+      # Redirect HTTP -> HTTPS
+      - "traefik.http.routers.frontend-http.rule=Host(`ai.ph-ye.org`)"
+      - "traefik.http.routers.frontend-http.entrypoints=web"
+      - "traefik.http.routers.frontend-http.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
     networks:
-      - raidan_net
+      - sovereign_net
     restart: always
 
-  # Legal Meter - Qdrant Vector Analysis
-  legal-meter:
-    build: ./legal-meter
-    container_name: YJPT_LegalMeter
-    ports:
-      - "8002:8002"
+  # --- BACKEND (FastAPI) ---
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: yemenjpt_backend
     env_file: .env
+    volumes:
+      - ./backend:/app/backend
+      - ./uploads:/app/uploads
+    labels:
+      - "traefik.enable=true"
+      # Route /api, /docs, /openapi.json to backend
+      - "traefik.http.routers.backend.rule=Host(`ai.ph-ye.org`) && (PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/openapi.json`))"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=myresolver"
     networks:
-      - raidan_net
+      - sovereign_net
     depends_on:
-      - qdrant
+      - db
+      - ollama
     restart: always
 
-  # Voice Legacy - TTS / Virtual Anchor
-  voice-legacy:
-    build: ./voice-legacy
-    container_name: YJPT_Voice
-    ports:
-      - "8003:8003"
-    env_file: .env
+  # --- AI ENGINE (OLLAMA) ---
+  ollama:
+    image: ollama/ollama:latest
+    container_name: yemenjpt_ollama
     volumes:
-      - shared-uploads:/app/shared-uploads
+      - ollama_data:/root/.ollama
     networks:
-      - raidan_net
+      - sovereign_net
+    # GPU Support (Uncomment if NVIDIA GPU is present)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
     restart: always
 
-  # Forensics - Image Analysis
-  forensics:
-    build: ./forensics-service
-    container_name: YJPT_Forensics
-    ports:
-      - "8080:8080"
-    networks:
-      - raidan_net
-    restart: always
-
-  # Database - PostgreSQL
+  # --- DATABASE (POSTGRES) ---
   db:
-    image: postgres:16-alpine
-    container_name: YJPT_Database
+    image: postgres:15-alpine
+    container_name: yemenjpt_db
+    env_file: .env
     environment:
-      POSTGRES_USER: raidan_admin
-      POSTGRES_PASSWORD: Samah@2052024X
-      POSTGRES_DB: raidan_vault
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - ./db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
     networks:
-      - raidan_net
+      - sovereign_net
+    restart: always
 
-  # Vector Database - Qdrant
+  # --- VECTOR DB (QDRANT) ---
   qdrant:
     image: qdrant/qdrant:latest
-    container_name: YJPT_Qdrant
-    ports:
-      - "6333:6333"
+    container_name: yemenjpt_qdrant
     volumes:
-      - ./qdrant_data:/qdrant/storage
+      - qdrant_data:/qdrant/storage
     networks:
-      - raidan_net
+      - sovereign_net
+    restart: always
 
-  # Automation - n8n
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: YJPT_Automation
-    ports:
-      - "5678:5678"
-    environment:
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=raidan_admin
-      - N8N_BASIC_AUTH_PASSWORD=Samah@2052024X
-    volumes:
-      - ./n8n-data:/home/node/.n8n
-    networks:
-      - raidan_net
-
-  # Storage - MinIO
+  # --- STORAGE (MINIO) ---
   minio:
     image: minio/minio:latest
-    container_name: YJPT_MinIO
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      - MINIO_ROOT_USER=raidan_admin
-      - MINIO_ROOT_PASSWORD=Samah@2052024X
+    container_name: yemenjpt_minio
     command: server /data --console-address ":9001"
+    env_file: .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    volumes:
+      - minio_data:/data
+    labels:
+      - "traefik.enable=true"
+      # Route files subdomain to MinIO
+      - "traefik.http.routers.minio.rule=Host(`files.ai.ph-ye.org`)"
+      - "traefik.http.routers.minio.entrypoints=websecure"
+      - "traefik.http.routers.minio.tls.certresolver=myresolver"
+      - "traefik.http.services.minio.loadbalancer.server.port=9000"
     networks:
-      - raidan_net
+      - sovereign_net
+    restart: always
 
-volumes:
-  shared-uploads:
+  # --- AUTOMATION (n8n) ---
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: yemenjpt_n8n
+    env_file: .env
+    volumes:
+      - n8n_data:/home/node/.n8n
+    labels:
+      - "traefik.enable=true"
+      # Route automation subdomain to n8n
+      - "traefik.http.routers.n8n.rule=Host(`automation.ai.ph-ye.org`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
+      - "traefik.http.routers.n8n.tls.certresolver=myresolver"
+    networks:
+      - sovereign_net
+    restart: always

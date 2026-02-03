@@ -411,7 +411,7 @@ const SovereignManagementContent: React.FC<{ authToken: string }> = ({ authToken
                        <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
                              <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-xl group-hover:bg-brand-primary/5 transition-colors">
-                                {tool.id.includes('yemenjpt') ? '🧠' : tool.category === 'OSINT واستخبارات' ? '🕵️' : '🛠️'}
+                                {tool.id.includes('yemenjpt') ? '🧠' : tool.category === 'أبحاث المصادر المفتوحة' ? '🕵️' : '🛠️'}
                              </div>
                              <div>
                                 <h4 className="text-xs font-black text-slate-800">{tool.name}</h4>

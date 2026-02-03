@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { Shield, Lock, Scale, Book, Globe, UserCheck } from 'lucide-react';
+import { Shield, Lock, Scale, Book, Globe, UserCheck, AlertTriangle, Eye } from 'lucide-react';
 
 const LegalDocs: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'privacy' | 'sovereignty' | 'constitution'>('privacy');
+  const [activeTab, setActiveTab] = useState<'privacy' | 'sovereignty' | 'constitution' | 'transparency'>('privacy');
 
   return (
     <div className="flex flex-col gap-8 h-full bg-brand-dark p-6">
@@ -15,7 +15,8 @@ const LegalDocs: React.FC = () => {
             {[
               { id: 'privacy', label: 'الخصوصية المطلقة', icon: <Lock size={14} /> },
               { id: 'sovereignty', label: 'السيادة الرقمية', icon: <Globe size={14} /> },
-              { id: 'constitution', label: 'الامتثال الدستوري', icon: <Book size={14} /> }
+              { id: 'constitution', label: 'الامتثال الدستوري', icon: <Book size={14} /> },
+              { id: 'transparency', label: 'الشفافية والمسؤولية', icon: <Eye size={14} /> }
             ].map(tab => (
               <button 
                   key={tab.id}
@@ -59,6 +60,23 @@ const LegalDocs: React.FC = () => {
                         <li><strong>استقلال النماذج:</strong> نستخدم نماذج مفتوحة المصدر (Allam, Llama, Qwen) يتم استضافتها وتشغيلها محلياً لضمان عدم خضوع المحتوى للرقابة الدولية أو "الفلاتر" الثقافية غير المناسبة.</li>
                         <li><strong>توطين البيانات:</strong> يتم تخزين الأرشيف الوطني للانتهاكات في وحدات تخزين هجينة (S3 Hybrid) تحت سيطرة المؤسسة، مما يمنع "الحظر الرقمي" أو مسح المحتوى من قبل المنصات العالمية.</li>
                         <li><strong>الهوية اللغوية:</strong> تحسين محركات الذكاء لفهم اللهجات اليمنية (صنعاني، تعزي، عدني، حضرمي) لضمان دقة التوثيق الميداني.</li>
+                    </ul>
+                </div>
+            ) : activeTab === 'transparency' ? (
+                <div className="animate-in fade-in duration-500">
+                    <h2>الشفافية وإخلاء المسؤولية (Transparency & Liability)</h2>
+                    <p>يلتزم النظام بمعيار <strong>"الوضوح الجذري" (Radical Clarity)</strong> مع المستخدم النهائي لضمان الاستخدام الأخلاقي والمسؤول للتقنية.</p>
+                    
+                    <div className="bg-brand-red/5 border border-brand-red/20 p-6 rounded-2xl my-6">
+                        <h4 className="text-brand-red mt-0 flex items-center gap-2"><AlertTriangle size={18}/> إخلاء المسؤولية القانونية</h4>
+                        <p className="mb-0 text-sm font-bold text-white">تؤكد المنصة بشكل قاطع أن مخرجات الذكاء الاصطناعي هي "أدوات مساعدة للقرار" (Decision Support Tools) وليست قرارات أو أحكاماً نهائية. تقع المسؤولية الكاملة للتحقق من المعلومات واستخدامها على عاتق المحقق البشري.</p>
+                    </div>
+
+                    <h3>التزامات المنصة:</h3>
+                    <ul>
+                        <li><strong>عدم مشاركة البيانات:</strong> التزام صارم بعدم مشاركة أي بيانات مدخلة أو مخرجة مع أي طرف ثالث، وفقاً لقوانين الخصوصية وحماية البيانات اليمنية.</li>
+                        <li><strong>شفافية الخوارزميات:</strong> توضيح مستويات الثقة (Confidence Levels) في الإجابات، والإشارة بوضوح عند استخدام أدوات التوليد الآلي.</li>
+                        <li><strong>سجل التدقيق:</strong> الاحتفاظ بسجل محلي للعمليات لأغراض المراجعة والمساءلة الداخلية، دون إتاحته لأي جهة خارجية.</li>
                     </ul>
                 </div>
             ) : (

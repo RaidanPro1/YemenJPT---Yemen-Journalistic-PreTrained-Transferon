@@ -120,7 +120,7 @@ const EditorialStudio: React.FC = () => {
               <textarea 
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="ابدأ صياغة الحقيقة هنا... (النظام يقوم بالمطابقة الجنائية والقانونية لحظياً)"
+                placeholder="ابدأ صياغة الحقيقة هنا... (النظام يقوم بالمطابقة المرجعية والقانونية لحظياً)"
                 className="w-full min-h-[60vh] text-lg text-slate-700 leading-relaxed bg-transparent outline-none resize-none placeholder:text-slate-200 placeholder:italic font-medium"
               ></textarea>
 
@@ -167,7 +167,7 @@ const EditorialStudio: React.FC = () => {
                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-cyan">التحسين السيادي</span>
                        {isAnalyzing ? <Zap size={14} className="animate-pulse text-brand-gold" /> : <ChevronLeft size={14} />}
                     </div>
-                    <p className="text-[9px] text-slate-400 font-bold">تحسين الرصانة ورفع مستوى الموضوعية الجنائية.</p>
+                    <p className="text-[9px] text-slate-400 font-bold">تحسين الرصانة ورفع مستوى الموضوعية المهنية.</p>
                  </button>
               </div>
            </div>
@@ -211,7 +211,7 @@ const EditorialStudio: React.FC = () => {
                     <input type="range" min="0" max="1" step="0.1" value={aiConfig.objectivity} onChange={(e) => setAiConfig({...aiConfig, objectivity: parseFloat(e.target.value)})} className="w-full h-1.5 bg-slate-200 rounded-full appearance-none accent-brand-primary cursor-pointer" />
                     <div className="flex justify-between text-[8px] text-slate-400 font-bold uppercase">
                         <span>سردي/أدبي</span>
-                        <span>جنائي/صارم</span>
+                        <span>مهني/صارم</span>
                     </div>
                  </div>
 

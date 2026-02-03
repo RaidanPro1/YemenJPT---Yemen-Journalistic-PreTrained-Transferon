@@ -6,6 +6,7 @@ import {
   Search, Plus, Bell, Command, BrainCircuit, Database
 } from 'lucide-react';
 import Tooltip from './Tooltip';
+import Logo from './Logo';
 
 interface LobeLayoutProps {
   activeId: string;
@@ -22,8 +23,8 @@ const AdminLayout: React.FC<LobeLayoutProps> = ({ activeId, onNavigate, children
     { id: 'insight', icon: <MessageSquare size={20} />, label: 'الدردشة' },
     { id: 'models', icon: <BrainCircuit size={20} />, label: 'الموديلات' },
     { id: 'training', icon: <Database size={20} />, label: 'تدريب AI' },
-    { id: 'forensics', icon: <Shield size={20} />, label: 'الجنايات' },
-    { id: 'osint', icon: <Globe size={20} />, label: 'OSINT' },
+    { id: 'forensics', icon: <Shield size={20} />, label: 'التحقق' },
+    { id: 'osint', icon: <Globe size={20} />, label: 'المصادر المفتوحة' },
     { id: 'geoint', icon: <Map size={20} />, label: 'الخرائط' },
     { id: 'settings', icon: <Settings size={20} />, label: 'الإعدادات' },
   ];
@@ -33,8 +34,8 @@ const AdminLayout: React.FC<LobeLayoutProps> = ({ activeId, onNavigate, children
       
       {/* Side Rail (Far Right in RTL) */}
       <aside className="w-16 flex flex-col items-center py-6 bg-[#f0f2f5] border-l border-brand-border z-50">
-        <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center text-white mb-8 shadow-lg shadow-blue-500/20">
-          <Shield size={22} />
+        <div className="w-10 h-10 mb-8 hover:scale-110 transition-transform cursor-pointer shadow-lg rounded-xl overflow-hidden bg-white">
+          <Logo className="w-full h-full" />
         </div>
         
         <div className="flex-1 flex flex-col gap-4">

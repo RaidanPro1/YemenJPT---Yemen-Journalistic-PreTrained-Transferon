@@ -20,7 +20,7 @@ interface UserIdentity {
 
 const UserManagementContent: React.FC<{ authToken: string }> = ({ authToken }) => {
   const [users, setUsers] = useState<UserIdentity[]>([
-    { id: '1', name: 'أحمد المحقق', email: 'a.investigator@raidan.pro', role: 'Lead Investigator', status: 'active', org: 'وحدة التحقق الجنائي', lastActive: 'الآن', securityLevel: 4 },
+    { id: '1', name: 'أحمد المحقق', email: 'a.investigator@raidan.pro', role: 'Lead Investigator', status: 'active', org: 'وحدة التحقق الاستقصائي', lastActive: 'الآن', securityLevel: 4 },
     { id: '2', name: 'سارة الصحفية', email: 'sara.field@raidan.pro', role: 'Journalist', status: 'active', org: 'مكتب تعز الميداني', lastActive: 'منذ ساعتين', securityLevel: 2 },
     { id: '3', name: 'نظام رادان', email: 'root@raidan.pro', role: 'Root Admin', status: 'active', org: 'النواة السيادية', lastActive: 'نشط', securityLevel: 5 },
     { id: '4', name: 'مستخدم تجريبي', email: 'test@yemenjpt.local', role: 'Journalist', status: 'suspended', org: 'خارجي', lastActive: 'منذ شهر', securityLevel: 1 },
@@ -171,7 +171,7 @@ const UserManagementContent: React.FC<{ authToken: string }> = ({ authToken }) =
             </div>
          </div>
          <button className="px-6 py-2 border border-white/20 text-[10px] font-black text-slate-400 uppercase tracking-widest rounded-xl hover:text-brand-cyan hover:border-brand-cyan transition-all">
-            عرض سجلات الوصول الجنائي
+            عرض سجلات الوصول للنظام
          </button>
       </div>
     </div>

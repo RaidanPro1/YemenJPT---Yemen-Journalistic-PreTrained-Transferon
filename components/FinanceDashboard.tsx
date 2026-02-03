@@ -151,7 +151,7 @@ const FinanceDashboard: React.FC = () => {
                        <DollarSign size={32} />
                     </div>
                     <div>
-                       <h3 className="text-3xl font-black text-white tracking-tighter">إدراج قيد استخباراتي مالي جديد</h3>
+                       <h3 className="text-3xl font-black text-white tracking-tighter">إدراج سجل استقصائي مالي جديد</h3>
                        <p className="text-[10px] text-brand-gold mt-1 uppercase tracking-[0.4em] font-black italic">Financial Intelligence & Asset Tracking Protocol</p>
                     </div>
                  </div>

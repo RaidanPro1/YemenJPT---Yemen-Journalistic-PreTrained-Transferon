@@ -12,8 +12,8 @@ const IntegrationsManager: React.FC = () => {
   const categories: (ToolCategory | 'الكل')[] = [
     'الكل',
     'AI وذكاء معرفي',
-    'OSINT واستخبارات',
-    'التحقق والجنايات الرقمية',
+    'أبحاث المصادر المفتوحة',
+    'التحقق والتدقيق الرقمي',
     'تتبع الأموال والشركات',
     'الرصد الجيومكاني',
     'علم البيانات والتحليل',
@@ -98,7 +98,7 @@ const IntegrationsManager: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                    <div className="w-12 h-12 rounded-2xl bg-brand-primary/5 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-inner border border-brand-primary/5">
-                      {tool.category === 'OSINT واستخبارات' ? '🕵️' : 
+                      {tool.category === 'أبحاث المصادر المفتوحة' ? '🕵️' : 
                        tool.category === 'AI وذكاء معرفي' ? '🧠' : 
                        tool.category === 'الرصد الجيومكاني' ? '🗺️' : 
                        tool.category === 'علم البيانات والتحليل' ? '📊' : '🛠️'}

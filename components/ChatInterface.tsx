@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, User, ShieldCheck, Paperclip, Copy, RotateCcw, ChevronDown, BrainCircuit, BookOpen, FileText, X, Bot, Lock, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Send, Mic, User, ShieldCheck, Paperclip, Copy, RotateCcw, ChevronDown, BrainCircuit, BookOpen, FileText, X, Bot, Lock, AlertTriangle, ExternalLink, Scale, EyeOff } from 'lucide-react';
 import Tooltip from './Tooltip';
 
 type Citation = {
@@ -28,17 +28,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPublic = false }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState({ id: 'YemenJPT', name: 'YemenJPT', icon: '🧠' });
+  const [selectedModel, setSelectedModel] = useState({ id: 'allam:latest', name: 'AllamYe', icon: '🧠' });
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [activeCitation, setActiveCitation] = useState<Citation[] | null>(null);
+  const [showLiabilityModal, setShowLiabilityModal] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const models = [
-    { id: 'YemenJPT', name: 'YemenJPT', icon: '🧠', desc: 'النواة السيادية (الدستور الأخلاقي)' },
+    { id: 'allam:latest', name: 'AllamYe', icon: '🧠', desc: 'نموذج علام اليمني المطور' },
+    { id: 'YemenJPT', name: 'YemenJPT', icon: '🛡️', desc: 'النواة السيادية (الدستور الأخلاقي)' },
     { id: 'yemenjpt-pro', name: 'YemenJPT Pro', icon: '⚖️', desc: 'التحليل المعمق والاستدلال' },
     { id: 'yemenjpt-flash', name: 'YemenJPT Flash', icon: '⚡', desc: 'السرعة والتلخيص اللحظي' },
-    { id: 'allam:latest', name: 'ALLAM', icon: '🇸🇦', desc: 'نموذج علام العربي' },
   ];
 
   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -227,7 +228,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPublic = false }) => {
         </div>
       </div>
 
-      {/* RAG Verification Modal (Citation Widget) */}
+      {/* RAG Verification Modal */}
       {activeCitation && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in" onClick={() => setActiveCitation(null)}>
            <div className="bg-white rounded-[2rem] p-8 max-w-lg w-full shadow-2xl border border-slate-100" onClick={e => e.stopPropagation()}>
@@ -258,8 +259,51 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPublic = false }) => {
         </div>
       )}
 
+      {/* Transparency & Liability Modal */}
+      {showLiabilityModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[150] flex items-center justify-center p-6 animate-in fade-in" onClick={() => setShowLiabilityModal(false)}>
+           <div className="bg-white rounded-[2.5rem] p-10 max-w-2xl w-full shadow-2xl border border-brand-primary/20 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-primary to-brand-cyan"></div>
+              
+              <div className="flex items-center gap-4 mb-8">
+                 <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-brand-primary border border-slate-100">
+                    <Scale size={32} />
+                 </div>
+                 <div>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tighter">الشفافية وإخلاء المسؤولية</h3>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-bold">Transparency & Liability Protocol</p>
+                 </div>
+              </div>
+
+              <div className="space-y-6 text-right">
+                 <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                    <h4 className="text-sm font-black text-slate-800 mb-2 flex items-center gap-2">
+                       <AlertTriangle size={16} className="text-brand-gold"/> حدود المسؤولية (Radical Clarity)
+                    </h4>
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                       مخرجات الذكاء الاصطناعي في هذا النظام هي <strong>"أدوات مساعدة لاتخاذ القرار"</strong> وليست قرارات أو أحكاماً نهائية. يجب على المستخدم البشري (الصحفي/المحقق) مراجعة كافة النتائج والتحقق منها قبل النشر أو الاعتماد عليها في سياقات قانونية.
+                    </p>
+                 </div>
+
+                 <div className="p-6 bg-brand-primary/5 rounded-3xl border border-brand-primary/10">
+                    <h4 className="text-sm font-black text-slate-800 mb-2 flex items-center gap-2">
+                       <EyeOff size={16} className="text-brand-primary"/> ضمان الخصوصية (Privacy & Sovereignty)
+                    </h4>
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                       نلتزم التزاماً صارماً بعدم مشاركة أي بيانات مدخلة أو مخرجة مع أي طرف ثالث. كافة عمليات المعالجة تتم محلياً، وتخضع لقوانين الخصوصية وحماية البيانات الشخصية النافذة في الجمهورية اليمنية.
+                    </p>
+                 </div>
+              </div>
+
+              <button onClick={() => setShowLiabilityModal(false)} className="mt-8 w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-lg hover:bg-brand-primary transition-all text-xs uppercase tracking-widest">
+                 فهمت والتزم بالبروتوكول
+              </button>
+           </div>
+        </div>
+      )}
+
       {/* Input Area */}
-      <div className="px-6 pb-8 pt-2 z-20">
+      <div className="px-6 pb-2 pt-2 z-20">
          <div className="max-w-3xl mx-auto">
             <div className={`bg-[#f0f2f5] rounded-3xl p-2 transition-all border border-transparent ${isPublic ? 'opacity-80' : 'focus-within:bg-white focus-within:shadow-2xl focus-within:ring-1 focus-within:ring-brand-primary/10 focus-within:border-brand-border'}`}>
                <textarea 
@@ -288,7 +332,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isPublic = false }) => {
                   </button>
                </div>
             </div>
-            <p className="text-[10px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest italic">YemenJPT Sovereignty Node • Ethical AI Enforced</p>
+            
+            {/* Permanent Legal Notice Footer */}
+            <div className="mt-3 flex justify-center">
+               <button 
+                 onClick={() => setShowLiabilityModal(true)}
+                 className="flex items-center gap-2 text-[9px] text-slate-400 hover:text-brand-primary transition-colors py-1 px-3 rounded-full hover:bg-slate-50"
+               >
+                  <Scale size={10} />
+                  <span className="font-bold">إخلاء مسؤولية سيادي: النتائج أدوات مساعدة للقرار وليست نهائية. البيانات لا تغادر الخادم.</span>
+               </button>
+            </div>
          </div>
       </div>
     </div>

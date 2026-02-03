@@ -1,7 +1,8 @@
+
 export type ToolCategory = 
   | 'AI وذكاء معرفي' 
-  | 'OSINT واستخبارات' 
-  | 'التحقق والجنايات الرقمية' 
+  | 'أبحاث المصادر المفتوحة' // Changed from OSINT to match previous updates
+  | 'التحقق والتدقيق الرقمي' // Changed from Forensic to Verification
   | 'تتبع الأموال والشركات' 
   | 'الرصد الجيومكاني' 
   | 'علم البيانات والتحليل'
@@ -18,6 +19,5 @@ export interface Tool {
   installationType: 'docker' | 'npm' | 'binary' | 'python';
   status: 'active' | 'deploying' | 'offline';
   tier: ('أساسي' | 'متقدم')[];
-  // FIX: Added optional invocationCmd to allow for custom command definitions.
   invocationCmd?: string;
 }

@@ -10,6 +10,7 @@ import PredictiveCenter from './PredictiveCenter';
 import OpsDashboard from './OpsDashboard';
 import GeoIntDashboard from './GeoIntDashboard';
 import EditorialStudio from './EditorialStudio';
+import Logo from './Logo';
 import { 
   MessageSquare, Mic, Shield, Map, BookOpen, 
   Settings, User, PanelLeftClose, PanelLeftOpen, Search, Plus, Star,
@@ -27,7 +28,7 @@ const JournalistView: React.FC<JournalistViewProps> = ({ onSwitchToAdmin }) => {
   const sidebarItems = [
     { id: 'chat', icon: <MessageSquare size={20} />, label: 'الدردشة السيادية' },
     { id: 'editorial', icon: <PenTool size={20} />, label: 'الإنتاج التحريري' },
-    { id: 'forensics', icon: <Eye size={20} />, label: 'التحقق الجنائي' },
+    { id: 'forensics', icon: <Eye size={20} />, label: 'التحقق الاستقصائي' },
     { id: 'geoint', icon: <Map size={20} />, label: 'الاستقصاء الجغرافي' },
     { id: 'audio', icon: <Mic size={20} />, label: 'مُنصت الصوتي' },
     { id: 'insight', icon: <Zap size={20} />, label: 'الاستبصار' },
@@ -39,7 +40,7 @@ const JournalistView: React.FC<JournalistViewProps> = ({ onSwitchToAdmin }) => {
     switch (activeTab) {
       case 'chat': return 'المحادثات';
       case 'editorial': return 'ستوديو التحرير';
-      case 'forensics': return 'مختبر الأدلة';
+      case 'forensics': return 'مختبر التحقق';
       case 'geoint': return 'الرصد الجغرافي';
       case 'audio': return 'مُنصت الصوتي';
       case 'insight': return 'مركز الاستبصار';
@@ -68,8 +69,8 @@ const JournalistView: React.FC<JournalistViewProps> = ({ onSwitchToAdmin }) => {
       
       {/* Side Rail - Lobe Style */}
       <aside className="w-16 flex flex-col items-center py-6 bg-[#f0f2f5] border-l border-brand-border z-50">
-        <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center text-white mb-8 shadow-lg shadow-blue-500/20">
-          <Shield size={22} />
+        <div className="w-10 h-10 mb-8 hover:scale-110 transition-transform cursor-pointer shadow-lg rounded-xl overflow-hidden bg-white">
+          <Logo className="w-full h-full" />
         </div>
         
         <div className="flex-1 flex flex-col gap-4">

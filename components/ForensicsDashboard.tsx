@@ -5,7 +5,7 @@ import {
   ZoomIn, Info, AlertTriangle, Download, FileText, 
   RefreshCw, Sliders, Palette, Crosshair, BarChart3, ChevronLeft,
   Fingerprint, Camera, Binary, Scan, Aperture, Activity, Move, MousePointer2, ZoomOut,
-  Maximize, Brain
+  Maximize, Brain, Scale
 } from 'lucide-react';
 
 type ForensicMethod = 'ELA' | 'CFA' | 'Noise' | 'Ghost' | 'Metadata' | 'Watermark' | 'Deepfake';
@@ -145,10 +145,10 @@ const ForensicsDashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-200 pb-8 shrink-0">
          <div>
             <h2 className="text-3xl font-black text-slate-900 tracking-tighter flex items-center gap-4 italic">
-               <Shield size={32} className="text-brand-primary" /> مختبر الجنايات وكشف التزييف
+               <Shield size={32} className="text-brand-primary" /> مختبر التحقق وكشف التزييف
             </h2>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-2 italic flex items-center gap-2">
-               <Zap size={12} className="text-brand-primary animate-pulse" /> Advanced Forensics Unit // Precision Tools
+               <Zap size={12} className="text-brand-primary animate-pulse" /> Advanced Verification Unit // Precision Tools
             </p>
          </div>
          <div className="flex gap-3">
@@ -164,7 +164,7 @@ const ForensicsDashboard: React.FC = () => {
               disabled={!preview || activeScan}
               className="px-8 py-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
             >
-               <Scan size={16} /> {isAnalysisComplete ? 'إعادة الفحص' : 'بدء التحليل الجنائي'}
+               <Scan size={16} /> {isAnalysisComplete ? 'إعادة الفحص' : 'بدء التحليل التقني'}
             </button>
          </div>
       </div>
@@ -208,7 +208,7 @@ const ForensicsDashboard: React.FC = () => {
                   {!preview ? (
                      <div className="text-center p-12 opacity-30 grayscale scale-90">
                         <Camera size={64} className="mx-auto mb-4 text-slate-300" />
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em]">بانتظار المادة الجنائية للتحليل</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em]">بانتظار الوسائط للتحقق</p>
                      </div>
                   ) : (
                     <div 
@@ -308,6 +308,14 @@ const ForensicsDashboard: React.FC = () => {
                   )}
                </div>
             </div>
+            
+            {/* Liability Notice for Forensics */}
+            <div className="flex justify-center">
+                <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-100 rounded-full text-[9px] text-amber-700 font-bold">
+                    <Scale size={10} />
+                    <span>تنبيه تحريري: نتائج التحليل التقني هي مؤشرات احتمالية وليست أدلة قطعية. يرجى المراجعة البشرية.</span>
+                </div>
+            </div>
          </div>
 
          {/* Professional Controls Sidebar */}
@@ -317,9 +325,9 @@ const ForensicsDashboard: React.FC = () => {
                 <div className="flex items-start gap-3">
                     <AlertTriangle className="text-amber-600 shrink-0" size={20} />
                     <div>
-                        <h4 className="text-xs font-black text-amber-800 mb-1">أداة دعم القرار البشري</h4>
+                        <h4 className="text-xs font-black text-amber-800 mb-1">أداة دعم القرار الصحفي</h4>
                         <p className="text-[10px] text-amber-700 leading-relaxed font-bold">
-                            نتائج كشف التزييف (Deepfake Detection) احتمالية وليست مطلقة. يجب استخدام هذه الأداة لدعم حكم المحقق البشري، وليس كقاضٍ نهائي. (UNESCO MIL Standard).
+                            نتائج كشف التزييف (Deepfake Detection) احتمالية وليست مطلقة. يجب استخدام هذه الأداة لدعم حكم المحقق الصحفي، وليس كقاضٍ نهائي. (UNESCO MIL Standard).
                         </p>
                     </div>
                 </div>

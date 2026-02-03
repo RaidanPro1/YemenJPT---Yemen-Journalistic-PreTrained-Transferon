@@ -4,13 +4,15 @@ import AdminView from './components/AdminView';
 import JournalistView from './components/JournalistView';
 import ChatInterface from './components/ChatInterface';
 import RegistrationForm from './components/RegistrationForm';
-import { Shield, LogIn, Info } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import KnowledgeBase from './components/KnowledgeBase';
+import Logo from './components/Logo';
 
 type AppState = 'public' | 'register' | 'journalist' | 'admin' | 'about';
 
 const App: React.FC = () => {
-  const [viewState, setViewState] = useState<AppState>('public');
+  // PREVIEW MODE: Defaulting to 'admin' to unlock all panels immediately
+  const [viewState, setViewState] = useState<AppState>('admin');
 
   const handleLoginSuccess = (role: 'journalist' | 'admin') => {
     setViewState(role);
@@ -23,23 +25,13 @@ const App: React.FC = () => {
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-brand-border flex items-center justify-between px-8 z-50 shadow-sm">
            <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setViewState('public')}>
               {/* Official Logo Integration */}
-              <div className="relative w-10 h-10 flex items-center justify-center">
-                 <img 
-                   src="/logo.png" 
-                   alt="YemenJPT Logo" 
-                   className="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform duration-300"
-                   onError={(e) => {
-                     // Fallback if logo.png is missing
-                     e.currentTarget.style.display = 'none';
-                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                   }}
-                 />
-                 <Shield className="text-brand-primary hidden w-full h-full" size={32} />
+              <div className="relative w-10 h-10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                 <Logo className="w-full h-full" />
               </div>
               
               <div className="flex flex-col">
                  <h1 className="text-xl font-black text-slate-900 leading-none tracking-tighter group-hover:text-brand-primary transition-colors">YemenJPT</h1>
-                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">Sovereign Intelligence</span>
+                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">Sovereign Journalism</span>
               </div>
            </div>
            
@@ -67,7 +59,7 @@ const App: React.FC = () => {
            <div className="h-full flex flex-col animate-in fade-in duration-500">
               <div className="bg-gradient-to-r from-brand-primary/5 via-brand-cyan/5 to-brand-primary/5 border-b border-brand-primary/10 p-2 text-center">
                  <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest flex items-center justify-center gap-2">
-                    <Shield size={10} /> نسخة عامة محدودة • سجل الدخول للوصول إلى أدوات التحقق الجنائي والمصادر المفتوحة
+                    <Logo className="w-3 h-3" /> نسخة عامة محدودة • سجل الدخول للوصول إلى أدوات التحقق الصحفي والمصادر المفتوحة
                  </p>
               </div>
               <ChatInterface isPublic={true} />
