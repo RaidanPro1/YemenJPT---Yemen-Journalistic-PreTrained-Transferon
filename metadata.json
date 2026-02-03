@@ -1,0 +1,8 @@
+{
+  "name": "YemenJPT - Sovereign Intelligence Platform",
+  "description": "Sovereign AI agent for Yemeni journalists, specializing in media forensics, constitutional compliance, and misinformation detection.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
