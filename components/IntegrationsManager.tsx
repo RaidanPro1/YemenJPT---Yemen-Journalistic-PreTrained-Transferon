@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { TOOLS_LIST } from '../constants';
 import { Tool, ToolCategory } from '../types';
 import ToolCard from './ToolCard';
+import { Search, Filter, Cpu, Globe, Target, BarChart3, Settings2 } from 'lucide-react';
 
 const IntegrationsManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,92 +40,107 @@ const IntegrationsManager: React.FC = () => {
     }
   };
 
+  const getStatusLabel = (status: Tool['status']) => {
+    switch (status) {
+      case 'active': return 'متصل';
+      case 'offline': return 'غير متصل';
+      case 'deploying': return 'قيد التجهيز';
+      default: return status;
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-8 h-full">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="flex flex-col gap-8 h-full font-cairo" dir="rtl">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-100 pb-8 shrink-0">
         <div>
-          <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none">مستكشف الأدوات والتكاملات</h2>
-          <p className="text-[10px] font-bold text-slate-500 dark:text-brand-cyan/60 uppercase tracking-widest mt-2">Sovereign Software Suite & Integration Registry</p>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tighter italic">مستكشف الأدوات السيادية</h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-2 italic flex items-center gap-2">
+            <Settings2 size={12} className="text-brand-primary" /> Sovereign Tool-Registry & Integration Hub
+          </p>
         </div>
         
-        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-          <div className="relative">
+        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+          <div className="relative group">
+            <Search className="absolute right-4 top-3 text-slate-300 group-focus-within:text-brand-primary transition-colors" size={16} />
             <input 
               type="text" 
-              placeholder="بحث في الأدوات..." 
+              placeholder="ابحث عن أداة أو وظيفة..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full md:w-64 bg-white dark:bg-black/20 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-brand-cyan transition-all"
+              className="w-full md:w-80 bg-white border border-slate-200 rounded-xl pr-12 pl-4 py-2.5 text-xs font-bold focus:border-brand-primary outline-none transition-all shadow-sm"
             />
-            <svg className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
           </div>
           
-          <select 
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value as any)}
-            className="bg-white dark:bg-black/20 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 outline-none cursor-pointer"
-          >
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
+          <div className="relative">
+             <Filter className="absolute right-4 top-3 text-slate-300 pointer-events-none" size={16} />
+             <select 
+               value={selectedCategory}
+               onChange={(e) => setSelectedCategory(e.target.value as any)}
+               className="bg-white border border-slate-200 rounded-xl pr-12 pl-10 py-2.5 text-xs font-black text-slate-700 outline-none cursor-pointer hover:border-brand-primary transition-all appearance-none shadow-sm"
+             >
+               {categories.map(cat => (
+                 <option key={cat} value={cat}>{cat}</option>
+               ))}
+             </select>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto custom-scrollbar pr-2 pb-10">
         {filteredTools.length === 0 ? (
-          <div className="col-span-full py-20 text-center text-slate-400 font-bold opacity-50 italic">
-            لم يتم العثور على أدوات تطابق البحث...
+          <div className="col-span-full py-20 text-center flex flex-col items-center gap-4 grayscale opacity-30">
+            <Globe size={64} className="text-slate-200" />
+            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">لا توجد نتائج تطابق معايير البحث...</p>
           </div>
         ) : (
           filteredTools.map(tool => (
-            <div key={tool.id} className="group bg-white dark:bg-brand-panel border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-cyan-glow/5 transition-all flex flex-col gap-4 relative overflow-hidden">
+            <div key={tool.id} className="group bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm hover:shadow-soft transition-all flex flex-col gap-6 relative overflow-hidden">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-xl bg-brand-cyan/5 flex items-center justify-center text-xl shadow-inner border border-brand-cyan/10">
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-2xl bg-brand-primary/5 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-inner border border-brand-primary/5">
                       {tool.category === 'OSINT واستخبارات' ? '🕵️' : 
                        tool.category === 'AI وذكاء معرفي' ? '🧠' : 
                        tool.category === 'الرصد الجيومكاني' ? '🗺️' : 
                        tool.category === 'علم البيانات والتحليل' ? '📊' : '🛠️'}
                    </div>
                    <div>
-                      <h4 className="font-black text-slate-800 dark:text-white text-sm group-hover:text-brand-cyan transition-colors">{tool.name}</h4>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{tool.category}</span>
+                      <h4 className="font-black text-slate-800 text-sm group-hover:text-brand-primary transition-colors">{tool.name}</h4>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{tool.category}</span>
                    </div>
                 </div>
-                <div className={`w-2 h-2 rounded-full ${tool.status === 'active' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-red-500'}`}></div>
+                <div className="flex flex-col items-end gap-1">
+                   <div className={`w-2 h-2 rounded-full ${tool.status === 'active' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : tool.status === 'deploying' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`}></div>
+                   <span className="text-[8px] font-black text-slate-400 uppercase">{getStatusLabel(tool.status)}</span>
+                </div>
               </div>
 
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed min-h-[40px]">
-                {tool.description}
+              <p className="text-[11px] text-slate-500 font-bold leading-relaxed min-h-[44px] italic">
+                "{tool.description}"
               </p>
 
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {tool.tags.map(tag => (
-                  <span key={tag} className="px-2 py-0.5 bg-slate-100 dark:bg-black/30 text-slate-500 dark:text-slate-400 text-[8px] font-black rounded uppercase tracking-widest border border-slate-200 dark:border-white/5">
+                  <span key={tag} className="px-2 py-1 bg-slate-50 text-slate-400 text-[8px] font-black rounded-lg uppercase tracking-widest border border-slate-100">
                     {tag}
                   </span>
                 ))}
               </div>
 
-              <div className="mt-auto pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+              <div className="mt-auto pt-5 border-t border-slate-50 flex items-center justify-between">
                  <div className="flex items-center gap-2">
-                    <span className="text-lg" title={tool.installationType}>{getInstallIcon(tool.installationType)}</span>
-                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase">{tool.installationType} Deployment</span>
+                    <span className="text-xl" title={tool.installationType}>{getInstallIcon(tool.installationType)}</span>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter italic">نمط {tool.installationType}</span>
                  </div>
                  <div className="flex gap-2">
                     {tool.tier.map(t => (
-                      <span key={t} className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${t === 'متقدم' ? 'bg-brand-gold/10 text-brand-gold border border-brand-gold/20' : 'bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20'}`}>
+                      <span key={t} className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase shadow-sm border ${t === 'متقدم' ? 'bg-brand-gold text-white border-brand-gold' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
                         {t}
                       </span>
                     ))}
                  </div>
               </div>
 
-              {/* Action Overlay on Hover */}
-              <div className="absolute inset-x-0 bottom-0 bg-brand-cyan h-1 scale-x-0 group-hover:scale-x-100 transition-transform origin-right duration-500"></div>
+              <div className="absolute inset-x-0 bottom-0 bg-brand-primary h-1 scale-x-0 group-hover:scale-x-100 transition-transform origin-right duration-500"></div>
             </div>
           ))
         )}

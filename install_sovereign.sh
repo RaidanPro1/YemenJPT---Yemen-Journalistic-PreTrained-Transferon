@@ -1,6 +1,7 @@
+
 #!/bin/bash
 # ==============================================================================
-# YemenJPT Master Install Script v7.5
+# YemenJPT Master Install Script v7.5 - Sovereign Credentials Reset
 # Target OS: Ubuntu 24.04 LTS
 # ==============================================================================
 
@@ -27,15 +28,21 @@ sudo ufw --force enable
 mkdir -p yemenjpt/{gateway,nlp-engine,forensics-service,legal-meter,voice-legacy,shared-uploads,db_data,qdrant_data}
 cd yemenjpt
 
-# 4. MASTER SECRETS INJECTION
+# 4. MASTER SECRETS INJECTION - UPDATED CREDENTIALS
 echo -e "${GREEN}[INJECTING SECRETS] Creating .env file...${NC}"
 cat > .env <<EOF
-# --- MASTER CREDENTIALS ---
-MASTER_PASS=Samah@2052024X
-DB_ROOT_PASSWORD=Samah@2052024X
+# --- MASTER CREDENTIALS (ROOT) ---
+MASTER_USER=info@raidan.pro
+MASTER_PASS=samah@2052024
+DB_ROOT_PASSWORD=samah@2052024
 DB_USER=raidan_admin
 DB_NAME=raidan_vault
-REDIS_PASSWORD=Samah@2052024X
+REDIS_PASSWORD=samah@2052024
+
+# --- AI PREFERENCE ---
+# Default to CPU-Only for Sovereign Independence
+AI_ACCELERATOR=cpu
+RESTRICT_AI_TOGGLE=true
 
 # --- AI KEYS ---
 OPENAI_API_KEY=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
@@ -73,6 +80,6 @@ sudo docker compose up -d
 # 7. Notify
 curl -s -X POST "https://api.telegram.org/bot8553949895:AAGhdsSOo2CHSyztjunUSiJf9hOX1gcyWFI/sendMessage" \
      -d "chat_id=8595385689" \
-     -d "text=🚀 YemenJPT NODE ONLINE: $(hostname) is fully configured and secured."
+     -d "text=🚀 YemenJPT NODE ONLINE: $(hostname) Credentials Reset. Master key updated for info@raidan.pro."
 
-echo -e "${GREEN}SUCCESS: YemenJPT is live. System online.${NC}"
+echo -e "${GREEN}SUCCESS: YemenJPT is live. System online with new root credentials.${NC}"

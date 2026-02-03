@@ -40,6 +40,7 @@ services:
     environment:
       - JWT_SECRET=raidan_secret_key_2024
       - OLLAMA_URL=http://host.docker.internal:11434
+      - MASTER_PASS=samah@2052024
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -49,7 +50,7 @@ services:
     container_name: YJPT_db
     environment:
       - POSTGRES_USER=raidan_admin
-      - POSTGRES_PASSWORD=Samah@2052024X
+      - POSTGRES_PASSWORD=samah@2052024
       - POSTGRES_DB=raidan_vault
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -64,6 +65,10 @@ services:
       - "5678:5678"
     volumes:
       - n8n_data:/home/node/.n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=info@raidan.pro
+      - N8N_BASIC_AUTH_PASSWORD=samah@2052024
     networks:
       - yemenjp-net
 

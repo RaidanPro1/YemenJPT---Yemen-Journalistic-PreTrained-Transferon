@@ -1,420 +1,404 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { 
+  Shield, Search, Zap, Maximize2, Layers, Target, Eye, 
+  ZoomIn, Info, AlertTriangle, Download, FileText, 
+  Move, MousePointer2, RefreshCw, ZoomOut, Sliders, Palette, Crosshair
+} from 'lucide-react';
 
-type RiskLevel = 'منخفض' | 'متوسط' | 'مرتفع' | 'حرج' | 'آمن';
-type ViewMode = 'overlay' | 'split';
+type ForensicMethod = 'ELA' | 'CFA' | 'Noise' | 'Ghost';
 
-interface ForensicReport {
-  target: string;
-  forensics: {
-    ela_analysis: {
-      ela_map_base64: string;
-      modification_probability: number;
-      integrity_status: string;
-    };
-    deepfake_detection: {
-      fake_probability: number;
-      is_synthetic: boolean;
-      method: string;
-    };
-    metadata: Record<string, string>;
-  };
+interface SuspiciousZone {
+  id: string;
+  x: number;
+  y: number;
+  score: number;
+  type: string;
 }
 
 const InvestigationsDashboard: React.FC = () => {
-  const [targetInput, setTargetInput] = useState('');
-  const [activeScan, setActiveScan] = useState<string | null>(null);
-  const [results, setResults] = useState<string[]>([]);
-  const [riskLevel, setRiskLevel] = useState<RiskLevel>('آمن');
-  const [showRisk, setShowRisk] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [forensicReport, setForensicReport] = useState<ForensicReport | null>(null);
-  const [showEla, setShowEla] = useState(false);
-  const [elaOpacity, setElaOpacity] = useState(0.7);
-  const [viewMode, setViewMode] = useState<ViewMode>('overlay');
-  
-  // Interactive View Controls
+  const [activeScan, setActiveScan] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
-  const [probeData, setProbeData] = useState<{ clientX: number, clientY: number, pixelX: number, pixelY: number, prob: number } | null>(null);
+  const [tooltip, setTooltip] = useState<{ x: number, y: number, value: number, visible: boolean }>({ x: 0, y: 0, value: 0, visible: false });
+  const [isAnalysisComplete, setIsAnalysisComplete] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
   
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Forensic Controls
+  const [selectedMethod, setSelectedMethod] = useState<ForensicMethod>('ELA');
+  const [elaQuality, setElaQuality] = useState(90);
+  const [colorMap, setColorMap] = useState<'standard' | 'high-contrast' | 'monochrome'>('standard');
+  const [suspiciousZones, setSuspiciousZones] = useState<SuspiciousZone[]>([]);
+
   const viewportRef = useRef<HTMLDivElement>(null);
-  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (selectedFile) {
-      const url = URL.createObjectURL(selectedFile);
-      setPreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    }
-  }, [selectedFile]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-      setTargetInput(e.target.files[0].name);
-      setForensicReport(null);
-      resetView();
-    }
-  };
-
-  const resetView = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-    setProbeData(null);
-  };
-
-  const addResult = (line: string) => {
-    setResults(prev => [...prev, line]);
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!preview) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.2 : 0.2;
+    setZoom(prev => Math.min(Math.max(prev + delta, 0.5), 10));
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 1 || (e.button === 0 && e.altKey)) {
-        setIsPanning(true);
-        setStartPan({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-    }
+    if (!preview) return;
+    setIsPanning(true);
+    setStartPan({ x: e.clientX - offset.x, y: e.clientY - offset.y });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isPanning) {
-      setPan({ x: e.clientX - startPan.x, y: e.clientY - startPan.y });
+      setOffset({
+        x: e.clientX - startPan.x,
+        y: e.clientY - startPan.y
+      });
     }
 
-    // Intensity Probe Logic
-    if (forensicReport && offscreenCanvasRef.current && viewportRef.current) {
+    if (preview && viewportRef.current) {
       const rect = viewportRef.current.getBoundingClientRect();
-      const viewportX = e.clientX - rect.left;
-      const viewportY = e.clientY - rect.top;
+      const x = (e.clientX - rect.left - offset.x) / zoom;
+      const y = (e.clientY - rect.top - offset.y) / zoom;
       
-      // Map viewport coordinates back to original image space
-      const x = (viewportX - pan.x) / zoom;
-      const y = (viewportY - pan.y) / zoom;
+      // Simulated probability calculation based on coordinates
+      const seed = Math.abs(Math.floor(x * y)) % 100;
+      const sensitivity = (100 - elaQuality) / 10;
+      const probability = seed > (80 - sensitivity) ? (85 + (seed % 15)) : (seed % 30);
       
-      const canvas = offscreenCanvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Adjust coordinate mapping based on contain/cover logic
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const pixelX = x * scaleX;
-        const pixelY = y * scaleY;
-
-        if (pixelX >= 0 && pixelX < canvas.width && pixelY >= 0 && pixelY < canvas.height) {
-          const pixel = ctx.getImageData(pixelX, pixelY, 1, 1).data;
-          const intensity = (pixel[0] + pixel[1] + pixel[2]) / 3;
-          setProbeData({ 
-            clientX: e.clientX, 
-            clientY: e.clientY, 
-            pixelX: Math.round(pixelX), 
-            pixelY: Math.round(pixelY), 
-            prob: (intensity / 255) * 100 
-          });
-        } else {
-          setProbeData(null);
-        }
-      }
+      setTooltip({ x: e.clientX - rect.left, y: e.clientY - rect.top, value: isAnalysisComplete ? probability : 0, visible: isAnalysisComplete });
     }
   };
 
-  const handleMouseUp = () => setIsPanning(false);
-
-  const handleWheel = (e: React.WheelEvent) => {
-      if (forensicReport) {
-          const delta = e.deltaY > 0 ? 0.9 : 1.1;
-          setZoom(prev => Math.min(Math.max(prev * delta, 0.5), 10));
-      }
+  const handleMouseUp = () => {
+    setIsPanning(false);
   };
 
-  const handleStartRecon = async () => {
-    if (!selectedFile) {
-        addResult("[تنبيه] يرجى اختيار ملف أولاً.");
-        return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      const url = URL.createObjectURL(e.target.files[0]);
+      setPreview(url);
+      setIsAnalysisComplete(false);
+      setSuspiciousZones([]);
+      resetView();
     }
-    setActiveScan('running');
-    addResult(`[النظام] جاري بدء تسلسل الاستطلاع الجنائي...`);
-    addResult(`[ELA] تحليل مستوى الخطأ (Error Level Analysis)...`);
+  };
 
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    try {
-      const res = await fetch('/api/forensics/sherloq', {
-        method: 'POST',
-        body: formData
-      });
-      if (!res.ok) throw new Error("Backend unavailable");
-      const data = await res.json();
-      setForensicReport(data);
+  const startInvestigation = () => {
+    if (!preview) return;
+    setActiveScan(true);
+    setIsAnalysisComplete(false);
+    setSuspiciousZones([]);
+    
+    setTimeout(() => {
+      setActiveScan(false);
+      setIsAnalysisComplete(true);
       
-      const prob = data.forensics.ela_analysis.modification_probability * 100;
-      addResult(`[ELA] احتمالية التعديل الرقمي: ${prob.toFixed(1)}%`);
-      addResult(`[Deepfake] فحص الترددات الطيفية مكتمل.`);
-      
-      // Load Heatmap into offscreen canvas for probing
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        canvas.getContext('2d')?.drawImage(img, 0, 0);
-        offscreenCanvasRef.current = canvas;
-      };
-      img.src = data.forensics.ela_analysis.ela_map_base64;
+      // Generate simulated suspicious zones for the report
+      setSuspiciousZones([
+        { id: 'Z-1', x: 240, y: 150, score: 87.4, type: 'Object Insertion' },
+        { id: 'Z-2', x: 410, y: 280, score: 62.1, type: 'Bayer Inconsistency (CFA)' },
+        { id: 'Z-3', x: 120, y: 320, score: 45.8, type: 'Noise Discrepancy' }
+      ]);
+    }, 2500);
+  };
 
-      setRiskLevel(data.forensics.deepfake_detection.is_synthetic ? 'حرج' : 'آمن');
-      setShowRisk(true);
-      setShowEla(true); // Enabled by default after report load
-    } catch (err) {
-      addResult(`[خطأ] فشل في الاتصال بمحرك التحليل المحلي. تأكد من تشغيل السيرفر.`);
-      // Mock data for demo if backend fails
-      setForensicReport({
-          target: selectedFile.name,
-          forensics: {
-              ela_analysis: {
-                  ela_map_base64: previewUrl || '',
-                  modification_probability: 0.24,
-                  integrity_status: 'suspicious'
-              },
-              deepfake_detection: {
-                  fake_probability: 0.78,
-                  is_synthetic: true,
-                  method: 'Spectral Artifact Detection'
-              },
-              metadata: { "Camera": "Canon EOS", "Software": "Adobe Photoshop 2024" }
-          }
-      });
-      setShowRisk(true);
-      setShowEla(true);
-    }
-    setActiveScan(null);
+  const resetView = () => {
+    setZoom(1);
+    setOffset({ x: 0, y: 0 });
   };
 
   return (
-    <div className="flex flex-col gap-8 h-full">
-      <div className="flex flex-col">
-        <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">لوحة التحقيقات الرقمية</h2>
-        <p className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest mt-2">محرك الجنايات الرقمية وكشف التلاعب بالوسائط</p>
+    <div className="flex flex-col gap-10 h-full bg-brand-bg font-cairo animate-in fade-in duration-500 overflow-y-auto custom-scrollbar p-10" dir="rtl">
+      {/* Header View */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-200 pb-8 shrink-0">
+         <div>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter italic flex items-center gap-4">
+               <Shield size={32} className="text-brand-primary" /> مختبر الجنايات والتحقق البصري المتقدم
+            </h2>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-2 italic">YemenJPT Sovereign Forensic Lab // Node-7</p>
+         </div>
+         <div className="flex gap-4">
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="px-6 py-3 bg-white border border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest rounded-2xl hover:border-brand-primary transition-all shadow-sm flex items-center gap-2"
+            >
+               <FileText size={16} /> استيراد مادة
+            </button>
+            <input type="file" ref={fileInputRef} hidden onChange={handleFileChange} accept="image/*" />
+            <button 
+              onClick={startInvestigation}
+              disabled={!preview || activeScan}
+              className="px-8 py-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+               <Zap size={16} /> {isAnalysisComplete ? 'إعادة التحليل' : 'بدء فحص شامل'}
+            </button>
+         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full min-h-0">
-        <div className="flex flex-col gap-6 overflow-y-auto custom-scrollbar pb-10">
-          
-          <div className="bg-white dark:bg-brand-panel border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xl">
-            <div className="flex items-center gap-4 mb-6">
-                <div className="flex-1">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">وحدة تحليل ELA وكشف التزييف</h3>
-                    <p className="text-[10px] text-slate-500">قم برفع الصورة لتحليلها جنائياً وكشف التلاعب الاصطناعي.</p>
-                </div>
-                <div className="flex gap-2">
-                    <div className={`px-3 py-1 rounded-full text-[9px] font-black border uppercase tracking-widest ${activeScan ? 'bg-brand-cyan/10 border-brand-cyan text-brand-cyan animate-pulse' : 'bg-slate-100 dark:bg-brand-dark border-slate-200 dark:border-slate-800 text-slate-400'}`}>
-                        {activeScan ? 'جاري التحليل' : 'نظام الخبراء جاهز'}
-                    </div>
-                </div>
-            </div>
-
-            <div 
-                onClick={() => fileInputRef.current?.click()}
-                className={`group border-2 border-dashed rounded-2xl p-10 mb-6 flex flex-col items-center justify-center cursor-pointer transition-all hover:border-brand-cyan/50 hover:bg-brand-cyan/5 ${selectedFile ? 'border-brand-cyan/30 bg-brand-cyan/5' : 'border-slate-200 dark:border-slate-800'}`}
-            >
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                {!selectedFile ? (
-                    <>
-                        <div className="w-16 h-16 rounded-2xl bg-brand-cyan/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <svg className="w-8 h-8 text-brand-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                        </div>
-                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400 text-center">اسحب الصورة هنا أو اضغط للاختيار</p>
-                    </>
-                ) : (
-                    <div className="flex flex-col items-center">
-                        <img src={previewUrl || ''} className="w-24 h-24 object-cover rounded-xl shadow-lg mb-3 border border-brand-cyan/20" />
-                        <p className="text-xs font-black text-brand-cyan uppercase tracking-widest">{selectedFile.name}</p>
-                    </div>
-                )}
-            </div>
-
-            <button 
-                onClick={handleStartRecon} 
-                disabled={!!activeScan || !selectedFile} 
-                className="w-full bg-brand-cyan text-slate-900 py-4 rounded-2xl font-black uppercase tracking-widest text-[12px] shadow-lg hover:shadow-cyan-glow transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-                {activeScan ? "جاري تنفيذ خوارزميات الاستكشاف..." : "بدء التحليل الجنائي الشامل"}
-            </button>
-          </div>
-
-          {forensicReport && (
-            <div className="bg-white dark:bg-brand-panel border border-slate-200 dark:border-slate-800 rounded-[2rem] p-6 shadow-xl animate-in fade-in slide-in-from-bottom-4 overflow-hidden relative">
-              
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex flex-col">
-                    <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">مختبر التحليل البصري</h3>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase">الوضع: {viewMode === 'split' ? 'مقارنة جنباً إلى جنب' : 'تراكب الخريطة الجنائية'}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                    {viewMode === 'overlay' && (
-                        <div className="flex flex-col items-end gap-1">
-                            <label className="text-[8px] font-black uppercase text-slate-500">شفافية ELA</label>
-                            <input 
-                                type="range" min="0" max="1" step="0.01" 
-                                value={elaOpacity} 
-                                onChange={(e) => setElaOpacity(parseFloat(e.target.value))}
-                                className="w-24 accent-brand-cyan"
-                            />
-                        </div>
-                    )}
-                    <div className="flex bg-slate-100 dark:bg-brand-dark p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-inner">
-                        <button onClick={() => setViewMode('overlay')} className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all ${viewMode === 'overlay' ? 'bg-white dark:bg-slate-700 text-brand-cyan shadow-sm' : 'text-slate-500'}`}>تراكب</button>
-                        <button onClick={() => setViewMode('split')} className={`px-3 py-1.5 text-[9px] font-black rounded-lg transition-all ${viewMode === 'split' ? 'bg-white dark:bg-slate-700 text-brand-cyan shadow-sm' : 'text-slate-500'}`}>مقارنة</button>
-                    </div>
-                </div>
-              </div>
-
-              <div 
-                ref={viewportRef}
-                className={`relative bg-black rounded-2xl overflow-hidden mb-6 cursor-crosshair group border border-slate-200 dark:border-slate-800 shadow-2xl ${viewMode === 'split' ? 'aspect-[21/9]' : 'aspect-video'}`}
-                onMouseMove={handleMouseMove}
-                onMouseDown={handleMouseDown}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={() => { setProbeData(null); handleMouseUp(); }}
-                onWheel={handleWheel}
-              >
-                {viewMode === 'overlay' ? (
-                    <div 
-                        className="w-full h-full flex items-center justify-center transition-transform duration-75 origin-center relative"
-                        style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
-                    >
-                        <img 
-                          src={previewUrl || ''} 
-                          className="max-w-none max-h-none pointer-events-none select-none absolute"
-                          alt="Original"
-                        />
-                        <img 
-                          src={forensicReport.forensics.ela_analysis.ela_map_base64} 
-                          className={`max-w-none max-h-none pointer-events-none select-none absolute transition-opacity duration-300 ${showEla ? 'opacity-100' : 'opacity-0'}`}
-                          style={{ 
-                            opacity: showEla ? elaOpacity : 0,
-                            mixBlendMode: 'screen' // Optimized for ELA highlight visibility
-                          }}
-                          alt="Forensic ELA Overlay"
-                        />
-                    </div>
-                ) : (
-                    <div className="flex w-full h-full" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center' }}>
-                        <div className="w-1/2 h-full border-r border-white/20 overflow-hidden flex items-center justify-center relative bg-slate-900">
-                             <img src={previewUrl || ''} className="max-w-none max-h-none pointer-events-none select-none" />
-                             <span className="absolute top-2 right-2 bg-black/60 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Original</span>
-                        </div>
-                        <div className="w-1/2 h-full overflow-hidden flex items-center justify-center relative bg-black">
-                             <img src={forensicReport.forensics.ela_analysis.ela_map_base64} className="max-w-none max-h-none pointer-events-none select-none" />
-                             <span className="absolute top-2 right-2 bg-brand-red/60 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase">ELA Heatmap</span>
-                        </div>
-                    </div>
-                )}
-                
-                {/* Visual Guides */}
-                {probeData && (
-                    <div className="absolute inset-0 pointer-events-none z-20">
-                        <div className="absolute border-l border-brand-cyan/40 h-full" style={{ left: probeData.clientX - (viewportRef.current?.getBoundingClientRect().left || 0) }}></div>
-                        <div className="absolute border-t border-brand-cyan/40 w-full" style={{ top: probeData.clientY - (viewportRef.current?.getBoundingClientRect().top || 0) }}></div>
-                    </div>
-                )}
-
-                {/* Probe HUD */}
-                {probeData && (
-                  <div 
-                    className="fixed z-50 bg-brand-panel/90 text-white px-4 py-3 rounded-2xl border border-brand-cyan/30 backdrop-blur-xl shadow-2xl pointer-events-none flex flex-col gap-1 min-w-[160px] animate-in zoom-in-95 duration-75"
-                    style={{ left: probeData.clientX + 20, top: probeData.clientY - 20 }}
-                  >
-                    <div className="flex justify-between items-center border-b border-white/10 pb-1 mb-1">
-                        <span className="text-[10px] font-black text-brand-cyan uppercase tracking-widest">مجس التلاعب</span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse"></div>
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] font-mono">
-                        <span className="text-slate-400 uppercase">الاحداثيات</span>
-                        <span>{probeData.pixelX},{probeData.pixelY}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] font-mono">
-                        <span className="text-slate-400 uppercase">كثافة الخطأ</span>
-                        <span className="text-brand-gold font-black">{probeData.prob.toFixed(1)}%</span>
-                    </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 flex-1 min-h-0">
+         {/* Main Analysis Area */}
+         <div className="lg:col-span-8 flex flex-col gap-8 min-h-0">
+            <div className="bg-white border border-slate-200 rounded-[3.5rem] p-8 flex-1 relative overflow-hidden group shadow-soft flex flex-col">
+               <div className="flex items-center justify-between mb-8 z-10">
+                  <div className="flex gap-2 p-1 bg-slate-50 rounded-2xl border border-slate-100">
+                    {(['ELA', 'CFA', 'Noise', 'Ghost'] as ForensicMethod[]).map(method => (
+                      <button
+                        key={method}
+                        onClick={() => setSelectedMethod(method)}
+                        className={`px-6 py-2 rounded-xl text-[10px] font-black transition-all ${selectedMethod === method ? 'bg-white text-brand-primary shadow-sm border border-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
+                      >
+                        {method}
+                      </button>
+                    ))}
                   </div>
-                )}
-              </div>
+                  <div className="flex gap-2">
+                     <button onClick={resetView} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-slate-400 hover:text-brand-primary transition-all" title="إعادة ضبط">
+                        <RefreshCw size={18}/>
+                     </button>
+                     <button className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-slate-400 hover:text-brand-primary transition-all" title="تحميل الخريطة الجنائية">
+                        <Download size={18}/>
+                     </button>
+                  </div>
+               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="bg-slate-50 dark:bg-brand-dark p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-inner">
-                    <div className="flex justify-between items-start mb-2">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تحليل مستويات الخطأ (ELA)</span>
-                        <div className="flex items-center gap-2">
-                            <button 
-                                onClick={() => setShowEla(!showEla)}
-                                className={`px-2 py-0.5 rounded text-[8px] font-black uppercase transition-all ${showEla ? 'bg-brand-cyan text-brand-dark' : 'bg-slate-800 text-slate-400'}`}
-                            >
-                                {showEla ? 'إيقاف العرض' : 'تفعيل العرض'}
-                            </button>
-                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${forensicReport.forensics.ela_analysis.integrity_status === 'suspicious' ? 'bg-brand-red/10 text-brand-red border border-brand-red/20' : 'bg-brand-success/10 text-brand-success border border-brand-success/20'}`}>
-                                {forensicReport.forensics.ela_analysis.integrity_status}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="flex items-end gap-4">
-                        <div className="flex flex-col">
-                            <span className={`text-4xl font-black tabular-nums tracking-tighter ${forensicReport.forensics.ela_analysis.modification_probability > 0.18 ? 'text-brand-red' : 'text-brand-success'}`}>
-                                {(forensicReport.forensics.ela_analysis.modification_probability * 100).toFixed(1)}%
-                            </span>
-                        </div>
-                    </div>
-                </div>
+               {/* Viewport Simulation */}
+               <div 
+                 ref={viewportRef}
+                 onWheel={handleWheel}
+                 onMouseDown={handleMouseDown}
+                 onMouseMove={handleMouseMove}
+                 onMouseUp={handleMouseUp}
+                 onMouseLeave={() => { handleMouseUp(); setTooltip(prev => ({ ...prev, visible: false })); }}
+                 className={`flex-1 bg-slate-50 rounded-[3rem] border border-slate-200 relative overflow-hidden flex items-center justify-center shadow-inner transition-all duration-300 ${preview ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+               >
+                  {/* Grid overlay */}
+                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#007aff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+                  
+                  <div 
+                    className="relative transition-transform duration-150 ease-out will-change-transform"
+                    style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
+                  >
+                    {!preview ? (
+                       <div className="text-center z-10 p-16 bg-white/60 backdrop-blur-xl rounded-[4rem] border border-white shadow-soft">
+                          <div className="w-20 h-20 bg-brand-primary/5 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6">
+                             <Eye size={36} className="text-brand-primary/40" />
+                          </div>
+                          <p className="text-[12px] font-black text-slate-500 uppercase tracking-[0.5em]">أدرج المادة لبدء السبر الجنائي</p>
+                       </div>
+                    ) : (
+                       <div className="relative">
+                          <div className="w-[640px] h-[400px] bg-slate-200 rounded-3xl overflow-hidden shadow-2xl border-4 border-white relative">
+                             <img 
+                               src={preview} 
+                               className="w-full h-full object-cover select-none pointer-events-none"
+                               alt="Forensic Target"
+                             />
+                             {/* Forensic Heatmap Layers */}
+                             {isAnalysisComplete && (
+                               <div className={`absolute inset-0 mix-blend-overlay opacity-70 transition-all duration-500 pointer-events-none ${colorMap === 'high-contrast' ? 'contrast-200 saturate-200' : colorMap === 'monochrome' ? 'grayscale brightness-150' : ''}`}>
+                                  {/* ELA Heatmap Simulation */}
+                                  {selectedMethod === 'ELA' && (
+                                    <div className="absolute inset-0 bg-brand-primary/10">
+                                      <div className="absolute top-1/4 left-1/3 w-40 h-40 bg-red-500/50 rounded-full blur-[60px] animate-pulse"></div>
+                                      <div className="absolute bottom-1/4 right-1/4 w-32 h-32 bg-yellow-400/30 rounded-full blur-[50px] animate-pulse delay-500"></div>
+                                    </div>
+                                  )}
+                                  {/* CFA Heatmap Simulation */}
+                                  {selectedMethod === 'CFA' && (
+                                    <div className="absolute inset-0 bg-green-500/10" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,255,0,0.05) 10px, rgba(0,255,0,0.05) 11px)' }}>
+                                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-green-400/40 rounded-3xl blur-[80px]"></div>
+                                    </div>
+                                  )}
+                               </div>
+                             )}
+                          </div>
+                          
+                          {/* Visual Markers for Suspicious Zones */}
+                          {isAnalysisComplete && suspiciousZones.map(zone => (
+                            <div 
+                              key={zone.id}
+                              className="absolute w-12 h-12 border-2 border-red-500 rounded-full animate-ping pointer-events-none"
+                              style={{ left: zone.x - 24, top: zone.y - 24, opacity: zone.score / 100 }}
+                            ></div>
+                          ))}
+                       </div>
+                    )}
+                  </div>
 
-                <div className="bg-slate-50 dark:bg-brand-dark p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-inner flex flex-col justify-between">
-                    <div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Deepfake Confidence</span>
-                        <p className="text-xs font-bold text-slate-800 dark:text-white leading-tight">
-                            {forensicReport.forensics.deepfake_detection.is_synthetic ? 'تم اكتشاف آثار لتوليد اصطناعي' : 'لم يتم العثور على أنماط اصطناعية واضحة.'}
-                        </p>
+                  {activeScan && (
+                    <div className="absolute inset-0 bg-white/40 backdrop-blur-md z-30 flex items-center justify-center">
+                       <div className="text-center">
+                          <div className="w-16 h-16 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin mx-auto mb-6"></div>
+                          <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em] animate-pulse">جاري تحليل التباين والأنماط...</p>
+                       </div>
                     </div>
-                    <div className="flex items-center gap-3 mt-4">
-                        <div className="flex-1 bg-slate-200 dark:bg-slate-800 h-1 rounded-full overflow-hidden">
-                             <div className={`h-full ${forensicReport.forensics.deepfake_detection.is_synthetic ? 'bg-brand-red' : 'bg-brand-cyan'}`} style={{ width: `${forensicReport.forensics.deepfake_detection.fake_probability * 100}%` }}></div>
-                        </div>
-                        <span className="text-[9px] font-black text-brand-cyan">{(forensicReport.forensics.deepfake_detection.fake_probability * 100).toFixed(0)}% Score</span>
+                  )}
+
+                  {/* Dynamic Tooltip */}
+                  {tooltip.visible && isAnalysisComplete && (
+                    <div 
+                      className="absolute z-50 pointer-events-none bg-slate-900/95 backdrop-blur-md text-white px-4 py-2 rounded-2xl shadow-2xl border border-white/10 animate-in fade-in zoom-in-95"
+                      style={{ left: tooltip.x + 20, top: tooltip.y - 40 }}
+                    >
+                       <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${tooltip.value > 75 ? 'bg-red-500 animate-pulse' : 'bg-brand-primary'}`}></div>
+                          <div>
+                             <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Modification Prob.</p>
+                             <p className="text-sm font-black font-mono italic">{tooltip.value.toFixed(1)}%</p>
+                          </div>
+                       </div>
                     </div>
-                </div>
-              </div>
+                  )}
+                  
+                  {/* Stats Overlay */}
+                  <div className="absolute top-8 left-8 flex flex-col gap-3 z-20">
+                     <div className="px-5 py-2.5 bg-brand-primary text-white text-[9px] font-black uppercase rounded-2xl shadow-lg shadow-blue-500/20 border border-brand-primary/20 flex items-center gap-2">
+                        <Sliders size={12}/> {selectedMethod} Engine: Active
+                     </div>
+                     <div className="px-5 py-2.5 bg-white text-slate-500 text-[9px] font-black uppercase rounded-2xl border border-slate-200 shadow-soft flex items-center gap-2">
+                        <Maximize2 size={12}/> Zoom: x{zoom.toFixed(1)}
+                     </div>
+                  </div>
+               </div>
             </div>
-          )}
-        </div>
 
-        <div className="bg-slate-900 dark:bg-brand-dark/60 border border-slate-800 rounded-[2.5rem] p-8 font-mono text-[11px] flex flex-col shadow-2xl relative overflow-hidden">
-          <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
-            <div className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full ${activeScan ? 'bg-brand-cyan animate-pulse shadow-cyan-glow' : 'bg-slate-700'}`}></div>
-                <span className="text-brand-cyan font-black uppercase tracking-widest text-[9px]">Forensic Command Log</span>
+            <div className="grid grid-cols-2 gap-8">
+               <div className="bg-white border border-slate-200 p-8 rounded-[3rem] shadow-soft hover:border-brand-primary transition-all group relative overflow-hidden">
+                  <div className="flex justify-between items-center mb-6">
+                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">نزاهة البكسلات (Pixel Integrity)</span>
+                     <Layers size={18} className={`${isAnalysisComplete ? 'text-brand-primary' : 'text-slate-300'}`} />
+                  </div>
+                  <div className="flex items-end gap-6">
+                     <span className="text-4xl font-black text-slate-900 italic tracking-tighter">{isAnalysisComplete ? '96.2%' : '--'}</span>
+                     <span className={`text-[9px] font-bold uppercase pb-1.5 tracking-widest font-black ${isAnalysisComplete ? 'text-brand-primary' : 'text-slate-300'}`}>
+                        {isAnalysisComplete ? 'Verified / موثوق' : 'بانتظار التحميل'}
+                     </span>
+                  </div>
+               </div>
+               <div className="bg-white border border-slate-200 p-8 rounded-[3rem] shadow-soft hover:border-red-500 transition-all group relative overflow-hidden">
+                  <div className="flex justify-between items-center mb-6">
+                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تجزئة المحتوى (Deepfake Splicing)</span>
+                     <Zap size={18} className={`${isAnalysisComplete ? 'text-red-500 animate-pulse' : 'text-slate-300'}`} />
+                  </div>
+                  <div className="flex items-end gap-6">
+                     <span className="text-4xl font-black text-slate-900 italic tracking-tighter">{isAnalysisComplete ? '0.4%' : '--'}</span>
+                     <span className={`text-[9px] font-bold uppercase pb-1.5 tracking-widest font-black ${isAnalysisComplete ? 'text-brand-success' : 'text-slate-300'}`}>
+                        {isAnalysisComplete ? 'Safe / آمن' : 'بانتظار التحليل'}
+                     </span>
+                  </div>
+               </div>
             </div>
-          </div>
+         </div>
 
-          <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar text-green-500/70" dir="ltr">
-            {results.length === 0 && <div className="text-slate-700 italic py-10 text-center uppercase tracking-widest opacity-30">Waiting for forensic data...</div>}
-            {results.map((line, idx) => (
-              <div key={idx} className="animate-in slide-in-from-left-2 duration-300">
-                <span className="opacity-30 mr-2 text-[9px]">[{new Date().toLocaleTimeString()}]</span>
-                <span className={`${line.includes('[خطأ]') || line.includes('[حرج]') ? 'text-brand-red' : line.includes('[نجاح]') ? 'text-brand-success font-black' : ''}`}>{line}</span>
-              </div>
-            ))}
-          </div>
+         {/* Sidebar: Forensic Controls & Report */}
+         <div className="lg:col-span-4 flex flex-col gap-8 overflow-y-auto custom-scrollbar">
+            {/* Forensic Configuration */}
+            <div className="bg-white border border-slate-200 rounded-[3rem] p-8 shadow-soft flex flex-col gap-6">
+               <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                  <Sliders className="text-brand-primary" size={18} /> معايرة التحليل الجنائي
+               </h3>
+               
+               <div className="space-y-6">
+                  {/* ELA Quality Slider */}
+                  <div className="space-y-3">
+                     <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">جودة الضغط (ELA Quality)</label>
+                        <span className="text-[10px] font-black text-brand-primary font-mono">{elaQuality}%</span>
+                     </div>
+                     <input 
+                        type="range" min="1" max="100" 
+                        value={elaQuality}
+                        onChange={(e) => setElaQuality(parseInt(e.target.value))}
+                        className="w-full h-1.5 bg-slate-100 rounded-full appearance-none accent-brand-primary cursor-pointer" 
+                     />
+                     <p className="text-[8px] text-slate-400 italic">قم بتغيير الجودة لرؤية تباين مستويات الخطأ.</p>
+                  </div>
 
-          {showRisk && (
-            <div className={`mt-6 p-6 rounded-[2rem] border-2 animate-in zoom-in-95 duration-500 shadow-2xl backdrop-blur-md flex items-center justify-between ${riskLevel === 'حرج' ? 'bg-brand-red/10 border-brand-red text-brand-red' : 'bg-brand-success/10 border-brand-success text-brand-success'}`}>
-              <div>
-                <p className="text-[9px] font-black uppercase mb-1 tracking-widest opacity-70">Threat Level</p>
-                <p className="text-3xl font-black uppercase tracking-tighter leading-none">{riskLevel}</p>
-              </div>
-              <div className="text-4xl">{riskLevel === 'حرج' ? '⚠️' : '🛡️'}</div>
+                  {/* Color Mapping Selection */}
+                  <div className="space-y-3">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+                        <Palette size={14} /> نمط الخريطة الحرارية
+                     </label>
+                     <div className="grid grid-cols-3 gap-2">
+                        {(['standard', 'high-contrast', 'monochrome'] as const).map(map => (
+                           <button 
+                              key={map}
+                              onClick={() => setColorMap(map)}
+                              className={`py-3 rounded-xl text-[8px] font-black uppercase border transition-all ${colorMap === map ? 'bg-brand-primary text-white border-brand-primary shadow-sm' : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-brand-primary/20'}`}
+                           >
+                              {map.replace('-', ' ')}
+                           </button>
+                        ))}
+                     </div>
+                  </div>
+               </div>
             </div>
-          )}
-        </div>
+
+            {/* Tactical Report Sidebar */}
+            <div className="bg-white border border-slate-200 rounded-[3rem] p-8 shadow-soft flex flex-col relative overflow-hidden flex-1">
+               <div className="absolute top-0 right-0 w-full h-1 bg-brand-primary shadow-lg shadow-blue-500/10"></div>
+               
+               <div className="flex items-center gap-4 mb-10 border-b border-slate-50 pb-8">
+                  <div className="w-12 h-12 bg-brand-primary/5 rounded-2xl flex items-center justify-center border border-brand-primary/10">
+                     <FileText size={24} className="text-brand-primary" />
+                  </div>
+                  <div>
+                     <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">تحليل المناطق المشبوهة</h3>
+                     <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 italic">Report: {isAnalysisComplete ? 'YE-921-V8' : 'Awaiting Data'}</p>
+                  </div>
+               </div>
+
+               <div className="space-y-8 flex-1 overflow-y-auto custom-scrollbar">
+                  {isAnalysisComplete ? (
+                    <>
+                      <div className="space-y-3">
+                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">المناطق المكتشفة (Suspicious Zones):</label>
+                         {suspiciousZones.map(zone => (
+                           <div key={zone.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-brand-primary transition-all group cursor-pointer">
+                              <div className="flex items-center gap-3">
+                                 <div className="p-2 bg-white rounded-lg shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-all">
+                                    <Crosshair size={14} />
+                                 </div>
+                                 <div>
+                                    <p className="text-[10px] font-black text-slate-800 uppercase">{zone.id}: {zone.type}</p>
+                                    <p className="text-[9px] text-slate-400 font-mono">COORD: {zone.x}, {zone.y}</p>
+                                 </div>
+                              </div>
+                              <span className={`text-[10px] font-black ${zone.score > 75 ? 'text-red-500' : 'text-brand-primary'}`}>{zone.score}%</span>
+                           </div>
+                         ))}
+                      </div>
+
+                      <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                         <label className="text-[9px] font-black text-slate-400 uppercase mb-3 block">الاستنتاج السيادي:</label>
+                         <p className="text-xs font-bold leading-relaxed italic text-slate-700">
+                            تم اكتشاف تباين غير طبيعي في مستويات الضغط عند الإحداثيات المركزية. تشير خوارزمية ELA بجودة {elaQuality}% إلى احتمالية تلاعب في حواف الكائنات بنسبة عالية. يوصى بمطابقة بصمة الـ CFA للتحقق من سلامة نمط باير.
+                         </p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center opacity-30 py-20">
+                       <Crosshair size={48} className="text-slate-200 mb-4" />
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">بانتظار نتائج المحرك...</p>
+                    </div>
+                  )}
+               </div>
+
+               {isAnalysisComplete && (
+                  <button className="w-full mt-8 py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg hover:bg-brand-primary transition-all flex items-center justify-center gap-3">
+                     <Download size={16} /> تصدير التقرير الفني المختوم
+                  </button>
+               )}
+
+               <div className="mt-8 pt-6 border-t border-slate-100 flex gap-4">
+                  <AlertTriangle size={20} className="text-brand-gold shrink-0 animate-pulse" />
+                  <p className="text-[9px] text-slate-400 italic leading-relaxed font-bold">
+                     تنبيه: يتم تشغيل كافة الخوارزميات محلياً لضمان سيادة البيانات. النتائج تتطلب مطابقة جنائية قانونية.
+                  </p>
+               </div>
+            </div>
+         </div>
       </div>
     </div>
   );

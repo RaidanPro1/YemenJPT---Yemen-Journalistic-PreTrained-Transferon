@@ -1,133 +1,144 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
+import { Cpu, Settings2, Sliders, Save, RefreshCw, ShieldCheck, Zap, MessageSquare, BrainCircuit } from 'lucide-react';
 import RootAuthGuard from './RootAuthGuard';
 
-const MODELS = [
-  { id: 'allam:latest', name: 'ALLAM (Core)', size: '13 GB', family: 'SDAIA/Local', usage: 'Arabic/English Specialist' },
-  { id: 'llama3:8b', name: 'Llama 3 (8B)', size: '4.7 GB', family: 'Meta/Local', usage: 'Reasoning & General' },
-  { id: 'mistral:latest', name: 'Mistral (7B)', size: '4.1 GB', family: 'MistralAI', usage: 'Speed & Summarization' },
-  { id: 'falcon3-yemen:latest', name: 'Falcon 3 Yemen', size: '7.5 GB', family: 'TII/Local', usage: 'Dialect Specialist' },
-  { id: 'whisper-ye:v2', name: 'Whisper-YE', size: '2.8 GB', family: 'RaidanPro', usage: 'Audio Transcription' },
-  { id: 'qwen2.5:7b', name: 'Qwen 2.5 (7B)', size: '4.5 GB', family: 'Alibaba', usage: 'Multilingual Core' },
-  { id: 'llava:latest', name: 'Llava (Vision)', size: '4.8 GB', family: 'Microsoft', usage: 'Image Understanding' },
-];
-
 const ModelManagerContent: React.FC<{ authToken: string }> = ({ authToken }) => {
-  const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
-  const [finetuneFile, setFinetuneFile] = useState<File | null>(null);
-  const [modelToFinetune, setModelToFinetune] = useState<string>(MODELS[0].id);
-  const [isFinetuning, setIsFinetuning] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('yemenjpt-pro');
+  const [config, setConfig] = useState({
+    temperature: 0.7,
+    maxTokens: 4096,
+    systemPrompt: 'أنت YemenJPT Pro، ذكاء اصطناعي سيادي متخصص للصحفيين اليمنيين...',
+    topP: 0.9,
+    thinkingBudget: 1024
+  });
 
-  const addToTerminal = (text: string) => {
-    setTerminalOutput(prev => [...prev, text]);
-  };
+  const models = [
+    { id: 'yemenjpt-pro', name: 'YemenJPT Pro', type: 'Reasoning', status: 'Optimized' },
+    { id: 'yemenjpt-flash', name: 'YemenJPT Flash', type: 'Speed', status: 'Online' },
+    { id: 'yemenjpt-vision', name: 'YemenJPT Vision', type: 'Multimedia', status: 'Ready' },
+    { id: 'yemenjpt-map', name: 'YemenJPT Map', type: 'Geospatial', status: 'Standby' },
+  ];
 
-  const handleFinetune = async () => {
-    if (!modelToFinetune || !finetuneFile || !authToken) {
-      alert('Please select a model and upload a dataset file.');
-      return;
-    }
-    
-    setIsFinetuning(true);
-    setTerminalOutput([]);
-    addToTerminal(`[CLIENT] Preparing to send fine-tuning request...`);
-    addToTerminal(`[CLIENT] Target Model: ${modelToFinetune}`);
-
-    const formData = new FormData();
-    formData.append('model_name', modelToFinetune);
-    formData.append('file', finetuneFile);
-
-    try {
-        const response = await fetch('/api/models/finetune', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${authToken}` },
-            body: formData,
-        });
-
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.detail || 'API request failed');
-
-        addToTerminal(`[API_SUCCESS] ${result.message}`);
-        
-        const steps = [
-            `[OLLAMA] Initializing weights for ${modelToFinetune}...`,
-            `[EXEC] Loading dataset: ${finetuneFile.name}`,
-            `[LOG] Training in progress (Epoch 1/3)...`,
-            `[LOG] Loss: 0.42 | Acc: 89.4%`,
-            `[SUCCESS] Model '${modelToFinetune}-finetuned' is now available in the fleet.`,
-        ];
-
-        for (const step of steps) {
-            await new Promise(r => setTimeout(r, 1200));
-            addToTerminal(step);
-        }
-    } catch (error: any) {
-        addToTerminal(`[API_ERROR] Failed: ${error.message}`);
-    } finally {
-        setIsFinetuning(false);
-    }
-  };
-  
   return (
-    <div className="flex flex-col gap-8 h-full">
-      <div className="flex flex-col">
-        <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none">إدارة نماذج الذكاء الاصطناعي</h2>
-        <div className="flex items-center gap-3 mt-2">
-            <p className="text-[10px] font-bold text-slate-500 dark:text-brand-cyan/60 uppercase tracking-widest">Ollama Model Orchestrator (Root Access)</p>
-            <span className="px-2 py-0.5 rounded bg-green-500/10 text-green-500 text-[8px] font-black border border-green-500/20 uppercase">Authenticated</span>
+    <div className="flex flex-col gap-8 h-full font-cairo animate-fade">
+      <div className="flex justify-between items-center bg-white p-8 rounded-[2rem] border border-slate-200 shadow-soft">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+            <BrainCircuit className="text-brand-primary" size={28} /> تخصيص النماذج السيادية (YemenJPT Core)
+          </h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 italic">Advanced Neural Architecture Control</p>
+        </div>
+        <div className="flex gap-3">
+          <button className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-brand-primary transition-all">
+            <Save size={16} /> حفظ التكوين الشامل
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full min-h-0">
-        <div className="flex flex-col gap-6">
-          <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xl">
-             <h3 className="text-[10px] font-black text-slate-400 dark:text-brand-gold uppercase tracking-widest mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-400"></span>
-                أسطول النماذج المحلية (Active Fleet)
-             </h3>
-             <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-               {MODELS.map(model => (
-                 <div key={model.id} className="p-3 rounded-lg border bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-slate-700 flex items-center justify-between group hover:border-brand-cyan/50 transition-all">
-                   <div className="flex flex-col">
-                     <span className="text-xs font-black text-slate-800 dark:text-white">{model.name}</span>
-                     <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">{model.family} • {model.size} • <span className="text-brand-cyan">{model.usage}</span></span>
-                   </div>
-                   <div className="flex gap-2">
-                      <button className="text-[9px] font-bold text-slate-400 hover:text-red-500 uppercase">Remove</button>
-                      <div className="text-[9px] font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded border border-green-500/20">READY</div>
-                   </div>
-                 </div>
-               ))}
-             </div>
-          </div>
-          
-          <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xl">
-            <h3 className="text-[10px] font-black text-slate-400 dark:text-brand-gold uppercase tracking-widest mb-4">الضبط الدقيق (Fine-Tuning)</h3>
-            <div className="space-y-4">
-                <select value={modelToFinetune} onChange={(e) => setModelToFinetune(e.target.value)} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white text-xs rounded-lg p-3 outline-none">
-                    {MODELS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
-                <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-4 text-center hover:border-brand-gold bg-slate-50 dark:bg-black/20 transition-colors">
-                    <input type="file" accept=".jsonl" onChange={(e) => e.target.files && setFinetuneFile(e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">{finetuneFile ? finetuneFile.name : "اسحب ملف التدريب (.jsonl) هنا"}</p>
-                </div>
-                <button onClick={handleFinetune} disabled={!finetuneFile || isFinetuning} className="w-full bg-brand-gold hover:brightness-110 text-brand-dark py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50">
-                    {isFinetuning ? "جاري التدريب..." : "بدء الضبط الدقيق للنموذج"}
-                </button>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0">
+        {/* Model Selection Rail */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          {models.map(m => (
+            <button
+              key={m.id}
+              onClick={() => setSelectedModel(m.id)}
+              className={`p-6 rounded-[1.5rem] border text-right transition-all group relative overflow-hidden ${selectedModel === m.id ? 'bg-brand-primary/5 border-brand-primary shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'}`}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${selectedModel === m.id ? 'bg-brand-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
+                  {m.type}
+                </span>
+                <span className="text-[9px] font-mono text-slate-400">{m.status}</span>
+              </div>
+              <h3 className={`text-sm font-black transition-colors ${selectedModel === m.id ? 'text-brand-primary' : 'text-slate-700'}`}>{m.name}</h3>
+              <p className="text-[10px] text-slate-400 mt-1 font-medium">إعدادات الاستدلال والمعالجة اللحظية</p>
+            </button>
+          ))}
         </div>
 
-        <div className="bg-black/90 border border-slate-700 dark:border-slate-800 rounded-xl p-6 font-mono text-xs overflow-hidden flex flex-col relative min-h-[400px] shadow-2xl">
-           <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
-              <span className="text-brand-gold font-black uppercase tracking-widest text-[9px]">Model Orchestrator Console</span>
+        {/* Configuration Stage */}
+        <div className="lg:col-span-8 bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-soft flex flex-col gap-8 overflow-y-auto custom-scrollbar">
+           <div className="flex items-center justify-between border-b border-slate-100 pb-6">
+              <div className="flex items-center gap-4">
+                 <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary">
+                    <Settings2 size={20} />
+                 </div>
+                 <h3 className="text-lg font-black text-slate-800">تكوين محرك {selectedModel}</h3>
+              </div>
+              <button className="text-slate-400 hover:text-brand-primary transition-colors">
+                <RefreshCw size={18} />
+              </button>
            </div>
-           <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar text-blue-100">
-             {terminalOutput.length === 0 && <div className="text-white/20">Waiting for commands...</div>}
-             {terminalOutput.map((line, idx) => (
-               <div key={idx} className="animate-in slide-in-from-left-2"><span className="text-brand-cyan mr-2">#</span>{line}</div>
-             ))}
-             {isFinetuning && <div className="w-2 h-4 bg-brand-gold animate-pulse inline-block"></div>}
+
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                 <div className="space-y-3">
+                    <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                       <span>درجة العشوائية (Temperature)</span>
+                       <span className="text-brand-primary">{config.temperature}</span>
+                    </div>
+                    <input 
+                      type="range" min="0" max="1" step="0.1" 
+                      value={config.temperature} 
+                      onChange={e => setConfig({...config, temperature: parseFloat(e.target.value)})}
+                      className="w-full h-1.5 bg-slate-100 rounded-full appearance-none accent-brand-primary cursor-pointer" 
+                    />
+                 </div>
+
+                 <div className="space-y-3">
+                    <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                       <span>ميزانية التفكير (Thinking Budget)</span>
+                       <span className="text-brand-primary">{config.thinkingBudget} Tokens</span>
+                    </div>
+                    <input 
+                      type="range" min="0" max="4096" step="128" 
+                      value={config.thinkingBudget} 
+                      onChange={e => setConfig({...config, thinkingBudget: parseInt(e.target.value)})}
+                      className="w-full h-1.5 bg-slate-100 rounded-full appearance-none accent-brand-primary cursor-pointer" 
+                    />
+                 </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                   <h4 className="text-[10px] font-black text-slate-400 uppercase mb-4 flex items-center gap-2 italic">
+                      <ShieldCheck size={14} className="text-brand-primary" /> ميزات الموديل النشطة
+                   </h4>
+                   <div className="space-y-3">
+                      {[
+                        { id: 'search', label: 'البحث الميداني (Search Grounding)', active: true },
+                        { id: 'rag', label: 'الذاكرة السيادية (RAG Context)', active: true },
+                        { id: 'tools', label: 'استدعاء الأدوات (Function Calling)', active: false },
+                      ].map(feature => (
+                        <div key={feature.id} className="flex items-center justify-between">
+                           <span className="text-[11px] font-bold text-slate-600">{feature.label}</span>
+                           <div className={`w-8 h-4 rounded-full relative transition-all ${feature.active ? 'bg-brand-primary' : 'bg-slate-300'}`}>
+                              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${feature.active ? 'right-4.5' : 'right-0.5'}`}></div>
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+              </div>
+           </div>
+
+           <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">التعليمات النظامية (System Instructions):</label>
+              <textarea 
+                value={config.systemPrompt}
+                onChange={e => setConfig({...config, systemPrompt: e.target.value})}
+                className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-6 text-sm text-slate-700 outline-none focus:border-brand-primary/30 transition-all min-h-[200px] leading-relaxed"
+                placeholder="أدخل بروتوكول التشغيل الأساسي هنا..."
+              />
+           </div>
+
+           <div className="mt-auto pt-6 border-t border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                 <Zap className="text-brand-gold" size={18} />
+                 <p className="text-[10px] text-slate-400 font-bold max-w-sm italic">سيتم تطبيق التعديلات فوراً على كافة واجهات الصحفيين المرتبطين بهذه العقدة السيادية.</p>
+              </div>
+              <button className="px-10 py-4 bg-brand-primary/10 text-brand-primary rounded-xl text-xs font-black uppercase hover:bg-brand-primary hover:text-white transition-all">تحديث الموديل</button>
            </div>
         </div>
       </div>

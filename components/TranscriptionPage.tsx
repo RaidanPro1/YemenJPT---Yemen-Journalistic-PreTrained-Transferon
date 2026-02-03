@@ -1,135 +1,165 @@
 
-import React, { useState } from 'react';
-import { Mic, Music, Volume2, Wind, Shield, Settings, Sliders, Play, Download, Trash2, CheckCircle, Database, Headphones } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { 
+  Mic, Music, Volume2, Wind, Shield, Settings, Sliders, 
+  Play, Download, Trash2, CheckCircle, Database, Headphones, 
+  Upload, Sparkles, Wand2, History 
+} from 'lucide-react';
 
 const TranscriptionPage: React.FC = () => {
-  const [activeTask, setActiveTask] = useState<string | null>(null);
-  const [denoiseLevel, setDenoiseLevel] = useState(70);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [denoiseLevel, setDenoiseLevel] = useState(70);
+  const [activeDialect, setActiveDialect] = useState('صنعاني');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="flex flex-col gap-8 h-full bg-brand-dark p-6 overflow-y-auto custom-scrollbar">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-800 pb-8">
-        <div>
-          <h2 className="text-3xl font-black text-white flex items-center gap-4">
-            <Mic className="text-brand-cyan w-8 h-8" /> محرك "مُنصت" للتفريع والمعالجة
-          </h2>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.3em] mt-2">
-            Sovereign Audio Forensics & Dialect Engine
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <div className="bg-brand-panel px-5 py-2 rounded-xl border border-slate-800 flex items-center gap-3">
-             <Database className="text-brand-gold" size={16} />
-             <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Ollama Cluster: Online</span>
+    <div className="flex flex-col h-full bg-white font-cairo">
+      {/* Header Info */}
+      <div className="px-8 py-6 border-b border-slate-100 bg-[#f8fafc]/30">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-black text-slate-800 flex items-center gap-3">
+              <Mic className="text-brand-primary" size={24} /> محرك "مُنصت" الصوتي
+            </h2>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 italic">YemenJPT Audio Forensics & Dialect Engine</p>
+          </div>
+          <div className="flex gap-2">
+             <div className="px-3 py-1 bg-brand-primary/5 rounded-full border border-brand-primary/10 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse"></span>
+                <span className="text-[9px] font-black text-brand-primary uppercase">Ollama Audio Cluster: Online</span>
+             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full min-h-0">
-        {/* Audio Lab Controls */}
-        <div className="lg:col-span-4 space-y-6">
-           <div className="bg-brand-panel border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
-              <h3 className="text-xs font-black text-brand-cyan uppercase tracking-widest mb-8 flex items-center gap-3">
-                 <Sliders size={18} /> مختبر معالجة الصوت (Demucs)
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
+          
+          {/* Main Interaction Area */}
+          <div className="lg:col-span-8 space-y-8">
+            {/* Upload/Drop Zone */}
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center hover:border-brand-primary hover:bg-brand-primary/5 transition-all cursor-pointer group relative overflow-hidden"
+            >
+              <input type="file" ref={fileInputRef} className="hidden" accept="audio/*,video/*" />
+              <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                <Upload className="text-slate-400 group-hover:text-brand-primary" size={32} />
+              </div>
+              <h3 className="text-lg font-black text-slate-800">ارفع التسجيل الميداني</h3>
+              <p className="text-sm text-slate-400 mt-2 max-w-xs mx-auto">يدعم ملفات MP3, WAV, MP4. يتم التشفير والمعالجة محلياً بالكامل.</p>
+              
+              <div className="absolute bottom-4 right-4 flex gap-2">
+                 <span className="px-2 py-1 bg-white border border-slate-100 rounded-lg text-[8px] font-bold text-slate-400 uppercase tracking-widest">Whisper Large v3</span>
+              </div>
+            </div>
+
+            {/* Output Editor Simulation */}
+            <div className="bg-[#f8fafc] border border-slate-200 rounded-[2.5rem] p-8 min-h-[300px] flex flex-col relative group">
+               <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                     <Sparkles className="text-brand-gold" size={18} />
+                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">محرر التفريغ الذكي</span>
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <button className="p-2 text-slate-400 hover:text-brand-primary hover:bg-white rounded-lg transition-all"><Download size={16} /></button>
+                     <button className="p-2 text-slate-400 hover:text-brand-primary hover:bg-white rounded-lg transition-all"><Settings size={16} /></button>
+                  </div>
+               </div>
+               
+               <div className="flex-1 flex items-center justify-center">
+                  {isProcessing ? (
+                    <div className="text-center animate-fade">
+                       <div className="w-12 h-12 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin mx-auto mb-4"></div>
+                       <p className="text-xs font-bold text-slate-500 italic">جاري معالجة اللهجة وعزل الضجيج...</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-300 italic font-medium">بانتظار رفع الملف لبدء التفريغ الجنائي...</p>
+                  )}
+               </div>
+
+               <div className="mt-6 flex gap-4">
+                  <button 
+                    onClick={() => setIsProcessing(!isProcessing)}
+                    disabled={isProcessing}
+                    className="flex-1 py-4 bg-brand-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:scale-[1.02] transition-all disabled:opacity-50"
+                  >
+                     بدء معالجة YemenJPT
+                  </button>
+               </div>
+            </div>
+          </div>
+
+          {/* Controls Sidebar */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Purification Lab */}
+            <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm">
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-8 flex items-center gap-3">
+                <Wand2 className="text-brand-primary" size={18} /> مختبر تنقية الصوت
               </h3>
               
-              <div className="space-y-6">
+              <div className="space-y-8">
                  <div className="space-y-4">
                     <div className="flex justify-between items-center text-[10px] font-black text-slate-500 uppercase">
-                       <span className="flex items-center gap-2"><Wind size={14}/> عزل ضجيج الخلفية</span>
-                       <span className="text-brand-cyan">{denoiseLevel}%</span>
+                       <span className="flex items-center gap-2"><Wind size={14}/> عزل الضجيج (Denoise)</span>
+                       <span className="text-brand-primary">{denoiseLevel}%</span>
                     </div>
                     <input 
                       type="range" value={denoiseLevel} 
                       onChange={(e) => setDenoiseLevel(parseInt(e.target.value))}
-                      className="w-full accent-brand-cyan" 
+                      className="w-full h-1.5 bg-slate-100 rounded-full appearance-none accent-brand-primary cursor-pointer" 
                     />
                  </div>
 
-                 <div className="grid grid-cols-1 gap-3">
-                    <button className="p-4 bg-black/40 rounded-2xl border border-white/5 hover:border-brand-gold/40 flex items-center justify-between group transition-all">
-                       <span className="text-[10px] font-black text-slate-400 group-hover:text-brand-gold uppercase">تفعيل فصل المسارات (Stem Split)</span>
-                       <Music size={16} className="text-slate-600 group-hover:text-brand-gold" />
+                 <div className="space-y-3">
+                    <button className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-brand-primary transition-all">
+                       <span className="text-[10px] font-black text-slate-500 group-hover:text-brand-primary uppercase">تحسين وضوح الكلام</span>
+                       <Volume2 size={16} className="text-slate-400 group-hover:text-brand-primary" />
                     </button>
-                    <button className="p-4 bg-black/40 rounded-2xl border border-white/5 hover:border-brand-cyan/40 flex items-center justify-between group transition-all">
-                       <span className="text-[10px] font-black text-slate-400 group-hover:text-brand-cyan uppercase">تمييز المتحدثين (Diarization)</span>
-                       <Headphones size={16} className="text-slate-600 group-hover:text-brand-cyan" />
+                    <button className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-brand-primary transition-all">
+                       <span className="text-[10px] font-black text-slate-500 group-hover:text-brand-primary uppercase">عزل المتحدثين</span>
+                       <Headphones size={16} className="text-slate-400 group-hover:text-brand-primary" />
                     </button>
                  </div>
               </div>
-           </div>
+            </div>
 
-           <div className="bg-brand-panel border border-brand-gold/10 rounded-[2.5rem] p-8 shadow-xl">
-              <h3 className="text-xs font-black text-brand-gold uppercase tracking-widest mb-6">إعدادات اللهجة المستهدفة</h3>
+            {/* Dialect Selection */}
+            <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm">
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-6">تخصيص اللهجة اليمنية</h3>
               <div className="grid grid-cols-2 gap-2">
                  {['صنعاني', 'عدني', 'تعزي', 'حضرمي', 'تهامي', 'فصحى'].map(dialect => (
-                    <button key={dialect} className="py-3 bg-black/30 border border-white/5 rounded-xl text-[10px] font-black text-slate-500 hover:text-brand-cyan hover:border-brand-cyan/30 transition-all uppercase">
+                    <button 
+                      key={dialect}
+                      onClick={() => setActiveDialect(dialect)}
+                      className={`py-3 border rounded-xl text-[10px] font-black transition-all uppercase ${activeDialect === dialect ? 'bg-brand-primary text-white border-brand-primary shadow-md' : 'bg-slate-50 text-slate-500 border-slate-100 hover:border-brand-primary/30'}`}
+                    >
                        {dialect}
                     </button>
                  ))}
               </div>
-           </div>
-        </div>
+            </div>
 
-        {/* Output & Task Manager */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-           <div className="bg-black/80 border border-slate-800 rounded-[2.5rem] p-8 flex-1 flex flex-col shadow-2xl relative overflow-hidden group">
-              <div className="flex items-center justify-between border-b border-white/5 pb-6 mb-6">
-                 <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${isProcessing ? 'bg-brand-cyan animate-pulse shadow-cyan-glow' : 'bg-green-500 shadow-emerald- glow'}`}></div>
-                    <span className="text-xs font-black text-white uppercase tracking-widest">محرر التفريغ الذكي</span>
-                 </div>
-                 <div className="flex gap-2">
-                    <button className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white" title="Download SRT"><Download size={14}/></button>
-                    <button className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white" title="Settings"><Settings size={14}/></button>
-                 </div>
-              </div>
-
-              <div className="flex-1 bg-transparent border-none text-slate-300 font-mono text-sm leading-relaxed overflow-y-auto custom-scrollbar italic opacity-50" dir="rtl">
-                 {isProcessing ? "جاري المعالجة الرقمية وفصل المسارات..." : "في انتظار رفع الملف أو بدء المهمة..."}
-              </div>
-
-              <div className="mt-8 flex gap-4">
-                 <div className="flex-1 relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                       <Volume2 size={18} className="text-slate-600" />
+            {/* Recent History */}
+            <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm">
+               <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                    <History size={16} /> السجل
+                  </h3>
+               </div>
+               <div className="space-y-3">
+                  {[
+                    { id: '1', name: 'مقابلة تعز 01', time: '12:40' },
+                    { id: '2', name: 'تسجيل ميداني عدن', time: 'أمس' }
+                  ].map(item => (
+                    <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group cursor-pointer hover:border-brand-primary transition-all">
+                       <span className="text-[10px] font-bold text-slate-600">{item.name}</span>
+                       <span className="text-[9px] text-slate-400 font-mono">{item.time}</span>
                     </div>
-                    <input 
-                      type="text" placeholder="اسم المهمة: مثلاً تسجيل ميداني تعز - 04" 
-                      className="w-full bg-black/40 border border-slate-800 rounded-[2rem] p-5 pl-14 text-sm text-slate-200 focus:border-brand-cyan outline-none transition-all"
-                    />
-                 </div>
-                 <button 
-                  onClick={() => setIsProcessing(!isProcessing)}
-                  className="px-10 bg-brand-cyan text-brand-dark font-black rounded-[2rem] shadow-cyan-glow hover:scale-[1.02] transition-all uppercase tracking-widest text-xs"
-                 >
-                    {isProcessing ? 'إيقاف' : 'بدء التفريغ'}
-                 </button>
-              </div>
-           </div>
-
-           <div className="bg-brand-panel border border-slate-800 rounded-[2.5rem] p-6 shadow-xl">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 px-4">أحدث المهام (Recent Tasks)</h3>
-              <div className="space-y-2">
-                 {[
-                   { id: 'T-982', name: 'مقابلة الحديدة - مسار B', status: 'Completed', date: '2024-05-20' },
-                   { id: 'T-981', name: 'رصد إذاعات FM - المهرة', status: 'Processing', date: '2024-05-19' }
-                 ].map(task => (
-                   <div key={task.id} className="p-4 bg-black/20 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-brand-cyan/20 transition-all">
-                      <div className="flex items-center gap-4">
-                         <div className={`w-2 h-2 rounded-full ${task.status === 'Completed' ? 'bg-green-500' : 'bg-brand-gold animate-pulse'}`}></div>
-                         <span className="text-[11px] font-black text-slate-300">{task.name}</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                         <span className="text-[9px] font-mono text-slate-500 uppercase">{task.date}</span>
-                         <button className="text-slate-600 hover:text-brand-cyan"><Trash2 size={14}/></button>
-                      </div>
-                   </div>
-                 ))}
-              </div>
-           </div>
+                  ))}
+               </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
