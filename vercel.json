@@ -3,11 +3,15 @@
   "rewrites": [
     { 
       "source": "/api/(.*)", 
-      "destination": "https://api.ph-ye.org/api/$1" 
+      "destination": "http://ai.ph-ye.org/api/$1" 
     },
     { 
       "source": "/token", 
-      "destination": "https://api.ph-ye.org/token" 
+      "destination": "http://ai.ph-ye.org/token" 
+    },
+    { 
+      "source": "/uploads/(.*)", 
+      "destination": "http://files.ph-ye.org/$1" 
     },
     { 
       "source": "/(.*)", 

@@ -14,7 +14,7 @@ volumes:
 
 services:
   # =========================================
-  # 1. FRONTEND APPLICATION (Port 3000)
+  # 1. FRONTEND APPLICATION
   # =========================================
   frontend:
     build:
@@ -28,10 +28,8 @@ services:
     restart: always
 
   # =========================================
-  # 2. CORE MICROSERVICES (Python)
+  # 2. CORE MICROSERVICES
   # =========================================
-  
-  # A. Main Gateway API (Port 8000)
   backend:
     build:
       context: .
@@ -45,7 +43,8 @@ services:
     environment:
       - OLLAMA_URL=http://host.docker.internal:11434
       - ENABLE_S3=false
-      - API_BASE_URL=http://localhost:8000
+      - API_BASE_URL=http://ai.ph-ye.org
+      - FILES_BASE_URL=http://files.ph-ye.org
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -57,7 +56,6 @@ services:
       - db
     restart: always
 
-  # B. NLP Engine (Radar) (Port 8001)
   nlp_engine:
     build:
       context: .
@@ -73,62 +71,9 @@ services:
       - sovereign_net
     restart: always
 
-  # C. Legal Meter (Port 8002)
-  legal_meter:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    container_name: yemenjpt_meter
-    command: uvicorn main:app --host 0.0.0.0 --port 8002
-    working_dir: /app/legal-meter
-    ports:
-      - "8002:8002"
-    volumes:
-      - ./legal-meter:/app/legal-meter
-    networks:
-      - sovereign_net
-    restart: always
-
-  # D. Voice Legacy (Port 8003)
-  voice_legacy:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    container_name: yemenjpt_voice
-    command: uvicorn main:app --host 0.0.0.0 --port 8003
-    working_dir: /app/voice-legacy
-    ports:
-      - "8003:8003"
-    volumes:
-      - ./voice-legacy:/app/voice-legacy
-    networks:
-      - sovereign_net
-    restart: always
-
-  # E. Forensics (Port 8080)
-  forensics:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    container_name: yemenjpt_forensics
-    command: uvicorn main:app --host 0.0.0.0 --port 8080
-    working_dir: /app/forensics-service
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./forensics-service:/app/forensics-service
-      - ./uploads:/app/uploads
-    networks:
-      - sovereign_net
-    restart: always
-
   # =========================================
-  # 3. DATA STORES & INFRASTRUCTURE
+  # 3. INFRASTRUCTURE
   # =========================================
-
-  # MinIO Service removed temporarily for pure local storage mode.
-  
-  # Automation (n8n) (Port 5678)
   n8n:
     image: n8nio/n8n:latest
     container_name: yemenjpt_n8n
@@ -136,31 +81,16 @@ services:
     ports:
       - "5678:5678"
     environment:
-      - N8N_HOST=localhost
+      - N8N_HOST=automation.ph-ye.org
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+      - WEBHOOK_URL=http://automation.ph-ye.org/
     volumes:
       - n8n_data:/home/node/.n8n
     networks:
       - sovereign_net
     restart: always
 
-  # Vector DB (Qdrant) (Port 6333)
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: yemenjpt_qdrant
-    ports:
-      - "6333:6333"
-    volumes:
-      - qdrant_data:/qdrant/storage
-    networks:
-      - sovereign_net
-    restart: always
-
-  # Relational DB (Postgres) (Port 5432)
   db:
     image: postgres:15-alpine
     container_name: yemenjpt_db
@@ -168,52 +98,20 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_DB:-yemenjpt}
     volumes:
       - db_data:/var/lib/postgresql/data
     networks:
       - sovereign_net
     restart: always
 
-  # DB GUI (Adminer) (Port 8081)
   adminer:
     image: adminer
-    container_name: yemenjpt_adminer
+    container_name: yemenjpt_control_db
     ports:
       - "8081:8080"
-    networks:
-      - sovereign_net
-    restart: always
-
-  # Graph DB (Neo4j) (HTTP: 7474, Bolt: 7687)
-  neo4j:
-    image: neo4j:latest
-    container_name: yemenjpt_graph
-    env_file: .env
-    ports:
-      - "7474:7474"
-      - "7687:7687"
-    environment:
-      NEO4J_AUTH: ${NEO4J_AUTH}
-    volumes:
-      - neo4j_data:/data
-    networks:
-      - sovereign_net
-    restart: always
-
-  # CMS (Ghost) (Port 2368)
-  ghost:
-    image: ghost:latest
-    container_name: yemenjpt_news
-    env_file: .env
-    ports:
-      - "2368:2368"
-    environment:
-      url: http://localhost:2368
-    volumes:
-      - ghost_data:/var/lib/ghost/content
     networks:
       - sovereign_net
     restart: always
